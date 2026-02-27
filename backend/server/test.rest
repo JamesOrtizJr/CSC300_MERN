@@ -64,3 +64,16 @@ Content-Type: application/json
 
 ###
 GET http://localhost:8081/userGetAllComments
+
+//TESTING REVIEWS
+### GET reviews for a movie
+GET http://localhost:8081/reviews/tt0111161
+
+### POST a review
+POST http://localhost:8081/reviews/tt0111161
+Content-Type: application/json
+x-user-id: sam123
+
+{
+  "rating": 5
+}
