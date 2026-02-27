@@ -4,7 +4,7 @@
 
  const express = require ("express");
  const router = express.Router();
- const Comment = require ("../models/userComment");
+ const Comment = require ("../../models/userComment");
 
  router.post("/", async (req, res) => {
     try {
