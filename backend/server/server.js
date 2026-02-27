@@ -9,6 +9,8 @@ const dbConnection = require('./config/db.config')
 const editUser = require('./routes/userEditUser')
 const deleteUser = require('./routes/userDeleteAll')
 
+const makeCommentRoute = require ('./routes/userComments/userMakeComment');
+const getAllCommentsRoute = require('./routes/userComments/userGetAllUserComments'); 
 //REVIEW
 const getReviewsRoute = require('./routes/getReviews');
 const postReviewRoute = require('./routes/postReview');
@@ -25,6 +27,9 @@ app.use('/user', getAllUsersRoute)
 app.use('/user', getUserByIdRoute)
 app.use('/user', editUser)
 app.use('/user', deleteUser)
+
+app.use ('/userMakeComments', makeCommentRoute);
+app.use ('/userGetAllComments', getAllCommentsRoute);
 
 //REVIEW
 app.use('/reviews', getReviewsRoute);
