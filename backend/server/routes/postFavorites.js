@@ -18,15 +18,3 @@ router.post("/", async (req, res) => {
     return res.status(500).json({ error: error.message });
   }
 });
-
-// GET /favorites 
-router.get("/", async (req, res) => {
-  try {
-    const favorites = await Favorites.find();
-    return res.json(favorites);
-  } catch (error) {
-    return res.status(500).json({ error: error.message });
-  }
-});
-
-module.exports = router;
