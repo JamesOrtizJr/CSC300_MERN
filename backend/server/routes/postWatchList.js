@@ -1,6 +1,6 @@
-import { Router } from "express";
-const router = Router();
-import { find } from "../models/WatchList";
+const express = require("express");
+const router = express.Router();
+import { find } from "../models/WatchList"; 
 //POST WatchList: Hersy C.
 
 router.post("/watchlist/:imdbID", async (req, res) => {
