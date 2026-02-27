@@ -1,14 +1,14 @@
-import { Router } from "express";
-const router = Router();
-import { find } from "../models/reviewModel";
-//getReviews: Sam Parker
+const express = require("express");
+const router = express.Router();
+const ReviewModel = require("../../models/reviewModel"); // import the model
 
+// getReviews: Sam Parker
 // Get all reviews for a movie
 router.get("/:imdbID", async (req, res) => {
   try {
     const { imdbID } = req.params;
 
-    const reviews = await find({ imdbID }).sort({ createdAt: -1 });
+    const reviews = await ReviewModel.find({ imdbID }).sort({ createdAt: -1 });
 
     const avgRating =
       reviews.length === 0
@@ -26,4 +26,4 @@ router.get("/:imdbID", async (req, res) => {
   }
 });
 
-export default router;
+module.exports = router;
