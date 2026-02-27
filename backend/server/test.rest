@@ -63,7 +63,7 @@ Content-Type: application/json
 }
 
 ###
-GET http://localhost:8081/userGetAllComments
+GET http://localhost:8081/userGetAllUserComments
 
 //TESTING REVIEWS
 ### GET reviews for a movie

@@ -1,5 +1,5 @@
-import { Router } from "express";
-const router = Router();
+const express = require("express");
+const router = express.Router();
 import { find } from "../models/WatchList";
 //getWatchList: Hersy C.
 
