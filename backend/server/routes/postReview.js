@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const ReviewModel = require("../models/reviewModel");
+const ReviewModel = require("../models/reviews");
 
 // postReviews: Sam Parker
 // Create a review for a movie
