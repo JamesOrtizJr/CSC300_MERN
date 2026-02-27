@@ -10,7 +10,7 @@ const editUser = require('./routes/userEditUser')
 const deleteUser = require('./routes/userDeleteAll')
 
 const makeCommentRoute = require ('./routes/userComments/userMakeComment');
-const getAllCommentsRoute = require('./routes/userComments/userGetAllUserComments'); 
+const getAllUserCommentsRoute = require('./routes/userComments/userGetAllUserComments'); 
 //REVIEW
 const getReviewsRoute = require('./routes/getReviews');
 const postReviewRoute = require('./routes/postReview');
@@ -29,7 +29,7 @@ app.use('/user', editUser)
 app.use('/user', deleteUser)
 
 app.use ('/userMakeComment', makeCommentRoute);
-app.use ('/userGetAllUserComments', getAllCommentsRoute);
+app.use ('/userGetAllUserComments', getAllUserCommentsRoute);
 
 //REVIEW
 app.use('/reviews', getReviewsRoute);
