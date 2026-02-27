@@ -1,6 +1,7 @@
-import { Schema, model } from "mongoose";
-//Reviews: Sam Parker
-const reviewSchema = new Schema(
+const mongoose = require("mongoose");
+
+// Reviews: Sam Parker
+const reviewSchema = new mongoose.Schema(
   {
     imdbID: { type: String, required: true, index: true },
 
@@ -15,5 +16,4 @@ const reviewSchema = new Schema(
 // Optional: prevent duplicate reviews by same user for same movie
 reviewSchema.index({ imdbID: 1, userId: 1 }, { unique: true });
 
-export default model("Review", reviewSchema);
-
+module.exports = mongoose.model("Review", reviewSchema);
