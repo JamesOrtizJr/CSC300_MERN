@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const ReviewModel = require("../models/reviewModel"); // import the model
+const ReviewModel = require("../../models/reviewModel"); // import the model
 
 // getReviews: Sam Parker
 // Get all reviews for a movie
