@@ -50,3 +50,17 @@ Content-Type: application/json
 
 ###
 POST  http://localhost:8081/user/deleteAll
+
+
+###
+POST http://localhost:8081/userMakeComment
+Content-Type: application/json
+
+{
+    "userId": "111",
+    "postId": "222",
+    "text": "Testing comment from REST client"
+}
+
+###
+GET http://localhost:8081/userGetAllComments
