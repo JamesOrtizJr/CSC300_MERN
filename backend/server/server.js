@@ -12,8 +12,8 @@ const deleteUser = require('./routes/userDeleteAll')
 const makeCommentRoute = require ('./routes/userComments/userMakeComment');
 const getAllCommentsRoute = require('./routes/userComments/userGetAllUserComments'); 
 //REVIEW
-//const getReviewsRoute = require('./routes/getReviews');
-//const postReviewRoute = require('./routes/postReview');
+const getReviewsRoute = require('./routes/getReviews');
+const postReviewRoute = require('./routes/postReview');
 
 require('dotenv').config();
 const SERVER_PORT = 8081
@@ -32,8 +32,8 @@ app.use ('/userMakeComment', makeCommentRoute);
 app.use ('/userGetAllUserComments', getAllCommentsRoute);
 
 //REVIEW
-//app.use('/reviews', getReviewsRoute);
-//app.use('/reviews', postReviewRoute);
+app.use('/reviews', getReviewsRoute);
+app.use('/reviews', postReviewRoute);
 
 /*
 app.listen(SERVER_PORT, (req, res) => {
