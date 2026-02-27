@@ -8,7 +8,7 @@ module.exports = () => {
         useUnifiedTopology: true
     }
     try{
-        mongoose.connect(process.env.MONGO_URI)
+        mongoose.connect(process.env.DB_URL)
         console.log("The backend has connected to the MongoDB database.")
     } catch(error){
         console.log(`${error} could not connect`)
