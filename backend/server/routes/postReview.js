@@ -1,27 +1,27 @@
-import { Router } from "express";
-const router = Router();
-import { create } from "../models/reviewModel";
-//postReviews: Sam Parker
+const express = require("express");
+const router = express.Router();
+const ReviewModel = require("../models/reviewModel");
 
+// postReviews: Sam Parker
 // Create a review for a movie
 router.post("/:imdbID", async (req, res) => {
   try {
     const { imdbID } = req.params;
-    const { rating } = req.body;
+    const { rating, comment } = req.body;
 
     // Temporary user id (until you have auth)
     const userId = req.headers["x-user-id"] || "demoUser";
 
-    if (rating == null ) {
-      return res.status(400).json({
-        message: "rating required",
-      });
+    if (rating == null) {
+      return res.status(400).json({ message: "rating required" });
     }
 
-    const created = await create({
+    const created = await ReviewModel.create({
       imdbID,
       userId,
       rating,
+      // comment is optional here; include if you want it
+      comment: comment || ""
     });
 
     return res.status(201).json(created);
@@ -34,4 +34,4 @@ router.post("/:imdbID", async (req, res) => {
   }
 });
 
-export default router;
+module.exports = router;
