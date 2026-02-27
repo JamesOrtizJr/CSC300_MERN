@@ -8,6 +8,7 @@ const getUserByIdRoute = require('./routes/userGetUserById')
 const dbConnection = require('./config/db.config')
 const editUser = require('./routes/userEditUser')
 const deleteUser = require('./routes/userDeleteAll')
+const favoritesRoute = require('./routes/favorites') //importing the favorites route
 
 const makeCommentRoute = require ('./routes/userComments/userMakeComment');
 const getAllUserCommentsRoute = require('./routes/userComments/userGetAllUserComments'); 
@@ -27,6 +28,7 @@ app.use('/user', getAllUsersRoute)
 app.use('/user', getUserByIdRoute)
 app.use('/user', editUser)
 app.use('/user', deleteUser)
+app.use('/favorites', favoritesRoute) //using the favorites route
 
 app.use ('/userMakeComment', makeCommentRoute);
 app.use ('/userGetAllUserComments', getAllUserCommentsRoute);
