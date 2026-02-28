@@ -1,16 +1,22 @@
 const express = require("express");
 const router = express.Router();
-import { find } from "../models/WatchList";
+const WatchListModel = require("../models/WatchList");
 //getWatchList: Hersy C.
 
-router.get("/watchlist/:userID", async (req, res) => {
+router.get("/", async (req, res) => {
   try {
-    const { userID } = req.params;  
 
-    const movies = await WatchList.find({ userID });
+    // Temporary user id (until auth is implemented)
+    const userId = req.headers["x-user-id"] || "demoUser";
 
-    res.status(200).json(movies);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+    const movies = await WatchListModel.find({ userId });
+
+    return res.status(200).json(movies);
+
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 });
+
+module.exports = router;
+

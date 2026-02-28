@@ -8,6 +8,9 @@ const getUserByIdRoute = require('./routes/userGetUserById')
 const dbConnection = require('./config/db.config')
 const editUser = require('./routes/userEditUser')
 const deleteUser = require('./routes/userDeleteAll')
+const postWatchList = require('./routes/postWatchList')
+const getWatchList = require('./routes/getWatchList')
+
 
 const postFavoritesRoute = require('./routes/postFavorites')
 const getFavoritesRoute = require('./routes/getFavorites')  
@@ -41,6 +44,8 @@ app.use('/favorites', getFavoritesRoute);
 app.use('/reviews', getReviewsRoute);
 app.use('/reviews', postReviewRoute);
 
+app.use('/watchlist', postWatchList);
+app.use('/watchlist', getWatchList);
 
 /*
 app.listen(SERVER_PORT, (req, res) => {

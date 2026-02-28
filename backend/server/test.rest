@@ -64,3 +64,19 @@ Content-Type: application/json
 
 ###
 GET http://localhost:8081/userGetAllUserComments
+
+###
+GET http://localhost:8081/WatchList
+
+###
+POST http://localhost:8081/watchlist
+Content-Type: application/json
+
+{
+    "userID": "2123",
+    "movieID": "222",
+    "movieTitle": "Testing movie title",
+    "poster": "https://example.com/poster.jpg"
+}
+
+
