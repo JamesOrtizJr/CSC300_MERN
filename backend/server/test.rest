@@ -95,3 +95,27 @@ x-user-id: sam123
 {
   "rating": 5
 }
+
+
+
+//testing postFavorites
+### POST a favorite
+POST http://localhost:8081/favorites/
+Content-Type: application/json
+
+
+{
+  "userId": "635ab8dfc407faf9f73deaf2",
+  "movieId": "tt0111161"
+}
+
+//testing postFavorites
+### GET favorites for a user
+GET http://localhost:8081/favorites/
+
+
+{
+  "userId": "635ab8dfc407faf9f73deaf2",
+  movieId: "tt0111161"
+}
+
