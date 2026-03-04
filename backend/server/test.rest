@@ -66,18 +66,24 @@ Content-Type: application/json
 GET http://localhost:8081/userGetAllUserComments
 
 ###
-GET http://localhost:8081/WatchList
+### GET WATCHLIST
+GET http://localhost:8081/watchlist
+x-user-id: testUser123
 
-###
+### POST WATCHLIST
 POST http://localhost:8081/watchlist
 Content-Type: application/json
+x-user-id: testUser123
 
 {
-    "userID": "2123",
-    "movieID": "222",
+    "movieId": "521",
     "movieTitle": "Testing movie title",
     "poster": "https://example.com/poster.jpg"
 }
+
+### DELETE FROM WATCHLIST
+DELETE http://localhost:8081/watchlist/222
+x-user-id: testUser123
 
 
 
