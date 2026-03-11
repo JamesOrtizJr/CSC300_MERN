@@ -76,13 +76,13 @@ Content-Type: application/json
 x-user-id: testUser123
 
 {
-    "movieId": "521",
+    "movieId": "522222",
     "movieTitle": "Testing movie title",
     "poster": "https://example.com/poster.jpg"
 }
 
 ### DELETE FROM WATCHLIST
-DELETE http://localhost:8081/watchlist/222
+DELETE http://localhost:8081/watchlist/522222
 x-user-id: testUser123
 
 
