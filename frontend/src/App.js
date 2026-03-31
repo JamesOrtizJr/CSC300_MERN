@@ -17,6 +17,13 @@ import MbtaAlertsPage from "./components/pages/mbtaAlerts"; //Added for MBTA Fir
 import MbtaLinesPage from "./components/pages/mbtaLines";
 
 
+
+
+
+// ADMIN
+import AdminPage from "./components/pages/AdminPage";
+
+
 export const UserContext = createContext();
 //test change
 //test again
@@ -39,6 +46,12 @@ const App = () => {
           <Route path="/privateUserProfile" element={<PrivateUserProfile />} />
           <Route exact path="/mbtaAlerts" element={<MbtaAlertsPage />} />
           <Route exact path="/mbtaLines" element={<MbtaLinesPage />} />
+
+
+
+
+
+          <Route path="/admin" element={<AdminPage />} />
         </Routes>
       </UserContext.Provider>
     </>
