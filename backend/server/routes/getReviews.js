@@ -1,8 +1,24 @@
 const express = require("express");
 const router = express.Router();
-const ReviewModel = require("../models/reviews"); // import the model
+const ReviewModel = require("../models/reviews");
 
-// getReviews: Sam Parker
+// Get all reviews for one user
+router.get("/user/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const reviews = await ReviewModel.find({ userId }).sort({ createdAt: -1 });
+
+    return res.json({
+      userId,
+      count: reviews.length,
+      reviews,
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 // Get all reviews for a movie
 router.get("/:imdbID", async (req, res) => {
   try {

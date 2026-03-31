@@ -1,22 +1,25 @@
-const mangoose = require('mongoose');
+const mongoose = require('mongoose'); 
 
-const watchListSchema = new mangoose.Schema({
-    userID: {
+const watchListSchema = new mongoose.Schema({
+    userId: {  
         type: String,
         required: true  
     },
-    movieID: {
+    movieId: {  
         type: String,
         required: true      
     },
-    title: {
+    movieTitle: {  
         type: String,
         required: true      
     },
     poster: {
         type: String,
-        required: true      
+        required: false 
     }
 });
 
-module.exports = mangoose.model('WatchList', watchListSchema);
+// Add index to prevent duplicates
+watchListSchema.index({ userId: 1, movieId: 1 }, { unique: true });
+
+module.exports = mongoose.model('WatchList', watchListSchema);

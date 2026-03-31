@@ -1,0 +1,17 @@
+GET http://localhost:8081/watchlist
+x-user-id: Hersy
+
+### POST WATCHLIST
+POST http://localhost:8081/watchlist
+Content-Type: application/json
+x-user-id: Hersy
+
+{
+    "movieId": "1",
+    "movieTitle": "Testing movie title",
+    "poster": "https://example.com/poster.jpg"
+}
+
+### DELETE FROM WATCHLIST
+DELETE http://localhost:8081/watchlist/1
+x-user-id: Hersy
