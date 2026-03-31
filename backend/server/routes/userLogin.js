@@ -28,6 +28,11 @@ router.post('/login', async (req, res) => {
     user.password
   );
 
+    // banned users cannot log in
+  if (user.isBanned) {
+    return res.status(403).send({ message: "Account is banned" });
+  }
+
   if (!checkPasswordValidity)
     return res
       .status(401)

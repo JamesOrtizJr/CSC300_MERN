@@ -1,0 +1,41 @@
+POST http://localhost:8081/user/signup
+Content-Type: application/json
+
+{
+  "username": "user1",
+  "email": "user1@test.com",
+  "password": "password123"
+}
+
+###
+
+POST http://localhost:8080/user/login
+Content-Type: application/json 
+
+{
+    "username" : "tochiamanze",
+    "password" : "tochi12345"
+}
+
+###
+GET http://localhost:8081/user/getAll
+Content-Type: application/json
+
+### BAN USER
+PUT http://localhost:8081/admin/ban/69cb00831bde446785e5a657
+Content-Type: application/json
+
+
+### UNBAN USER
+PUT http://localhost:8081/admin/unban/69cb00831bde446785e5a657
+Content-Type: application/json
+
+### ADMIN STATS
+GET http://localhost:8081/admin/stats
+
+### MAKE an ADMIN
+
+PUT http://localhost:8081/admin/make-admin/69cb07c4080128416163fa23
+Content-Type: application/json
+
+
