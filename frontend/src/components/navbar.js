@@ -33,7 +33,7 @@ export default function Navbar() {
 
 
 
-          
+        <Nav.Link href="/movies/tt1375666">Movie Details</Nav.Link>
         <Nav.Link href="/admin">Admin</Nav.Link>
      
       </Nav>

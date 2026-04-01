@@ -22,6 +22,7 @@ import MbtaLinesPage from "./components/pages/mbtaLines";
 
 // ADMIN
 import AdminPage from "./components/pages/AdminPage";
+import MovieDetailsPage from "./components/pages/movieDetailsPage";
 
 
 export const UserContext = createContext();
@@ -50,7 +51,7 @@ const App = () => {
 
 
 
-
+          <Route path="/movies/:id" element={<MovieDetailsPage />} />
           <Route path="/admin" element={<AdminPage />} />
         </Routes>
       </UserContext.Provider>
