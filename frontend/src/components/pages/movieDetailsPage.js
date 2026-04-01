@@ -1,13 +1,19 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { UserContext } from "../../App";
 
 function MovieDetailsPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-
+  const userContext = useContext(UserContext);
+  const user = userContext?.user;
   const [movie, setMovie] = useState(null);
   const [isFavorite, setIsFavorite] = useState(false);
   const [watchLater, setWatchLater] = useState(false);
+  const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+
+  const [showAuthPopup, setShowAuthPopup] = useState(false);
 
   useEffect(() => {
     fetch(`https://www.omdbapi.com/?i=${id}&apikey=ada999e2`)
@@ -26,6 +32,15 @@ function MovieDetailsPage() {
   const decadeTag = !isNaN(yearNumber)
     ? `${Math.floor(yearNumber / 10) * 10}s`
     : null;
+
+  const requireLogin = (action) => {
+    if (!user) {
+      setShowAuthPopup(true);
+      return;
+    }
+
+    action();
+  };
 
   return (
     <div className="p-8">
@@ -52,6 +67,7 @@ function MovieDetailsPage() {
         <div className="flex-1 h-[30rem] flex flex-col">
           {/* Header */}
           <div className="flex justify-between items-start gap-6">
+            {/* Title + tags */}
             <div>
               <h1 className="text-4xl font-bold mb-3">{movie.Title}</h1>
 
@@ -85,36 +101,71 @@ function MovieDetailsPage() {
               </div>
             </div>
 
-            {/* Action buttons */}
-            <div className="flex flex-col gap-4 min-w-[170px] items-start">
-              <button
-                onClick={() => setWatchLater(!watchLater)}
-                className="flex items-center gap-2 text-sm font-medium bg-transparent border-none p-0 hover:opacity-70"
-              >
-                <span className="w-5 h-5 rounded-full border border-black flex items-center justify-center text-sm leading-none bg-white">
-                  {watchLater ? "−" : "+"}
-                </span>
-                <span>Watch Later</span>
-              </button>
-
-              <button
-                onClick={() => setIsFavorite(!isFavorite)}
-                className="flex items-center gap-2 text-sm font-medium bg-transparent border-none p-0 hover:opacity-70"
-              >
-                <span
-                  className={`text-xl leading-none ${
-                    isFavorite ? "text-yellow-400" : "text-white"
-                  }`}
-                  style={{ WebkitTextStroke: "1px black" }}
+            {/* Actions */}
+            <div className="flex flex-col items-end min-w-[280px]">
+              {/* Watch Later + Favorite */}
+              <div className="flex gap-6 mb-3">
+                <button
+                  onClick={() =>
+                    requireLogin(() => setWatchLater(!watchLater))
+                  }
+                  className="flex items-center gap-2 text-lg font-medium hover:opacity-70"
                 >
-                  ★
-                </span>
-                <span>Favorite</span>
-              </button>
+                  <span className="w-5 h-5 rounded-full border border-black flex items-center justify-center text-sm bg-white">
+                    {watchLater ? "−" : "+"}
+                  </span>
+                  Watch Later
+                </button>
+
+                <button
+                  onClick={() =>
+                    requireLogin(() => setIsFavorite(!isFavorite))
+                  }
+                  className="flex items-center gap-2 text-lg font-medium hover:opacity-70"
+                >
+                  <span
+                    className={`text-2xl ${
+                      isFavorite ? "text-yellow-400" : "text-white"
+                    }`}
+                    style={{ WebkitTextStroke: "1px black" }}
+                  >
+                    ★
+                  </span>
+                  Favorite
+                </button>
+              </div>
+
+              {/* Rating */}
+              <div
+                className="flex gap-1 justify-center w-full"
+                onMouseLeave={() => setHoverRating(0)}
+              >
+                {[1, 2, 3, 4, 5].map((star) => {
+                  const isActive = star <= (hoverRating || rating);
+
+                  return (
+                    <button
+                      key={star}
+                      onClick={() => requireLogin(() => setRating(star))}
+                      onMouseEnter={() => setHoverRating(star)}
+                      className="text-[2rem] transition-transform duration-150 hover:scale-110"
+                    >
+                      <span
+                        className={`${
+                          isActive ? "text-yellow-400" : "text-white"
+                        }`}
+                        style={{ WebkitTextStroke: "1px black" }}
+                      >
+                        ★
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
-          {/* Lower section */}
+          {/* Bottom section */}
           <div className="mt-10 flex gap-6 flex-1 min-h-0">
             <div className="flex-1 border border-black rounded-md p-5 bg-white flex flex-col overflow-hidden">
               <h2 className="text-xl font-semibold mb-3">Description</h2>
@@ -141,6 +192,35 @@ function MovieDetailsPage() {
           </div>
         </div>
       </div>
+
+      {/* Auth popup */}
+      {showAuthPopup && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-md shadow-lg p-6 w-[26rem] text-center">
+            <h2 className="text-2xl font-semibold mb-3">Sign in required</h2>
+            <p className="mb-6 text-gray-700">
+              You need to sign in to add movies to your watch list, favorite
+              movies, or leave a rating.
+            </p>
+
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={() => navigate("/login")}
+                className="border border-black rounded-md px-4 py-2 bg-yellow-200 hover:bg-yellow-300"
+              >
+                Sign In
+              </button>
+
+              <button
+                onClick={() => setShowAuthPopup(false)}
+                className="border border-black rounded-md px-4 py-2 bg-white hover:bg-gray-100"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

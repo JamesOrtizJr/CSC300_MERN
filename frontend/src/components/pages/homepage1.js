@@ -7,7 +7,7 @@ import { useNavigate } from "react-router-dom";
 const PRIMARY_COLOR = "#a2087c";
 const SECONDARY_COLOR = "#0c0c1f";
 
-const API_KEY = "YOUR_API_KEY"; // 🔥 replace this
+const API_KEY = "ada999e2"; // 🔥 replace this
 
 const HomePage1 = () => {
   const [movies, setMovies] = useState([]);
