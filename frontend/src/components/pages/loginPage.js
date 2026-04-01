@@ -62,8 +62,13 @@ const Login = () => {
         error.response.status >= 400 &&
         error.response.status <= 500
       ) {
+        if (error.response.status === 403) {
+      setError("Account is banned");
+      } else {
+        
         setError(error.response.data.message);
       }
+    }
     }
   };
 

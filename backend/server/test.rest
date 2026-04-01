@@ -111,8 +111,8 @@ Content-Type: application/json
 
 
 {
-  "userId": "635ab8dfc407faf9f73deaf2",
-  "movieId": "tt0111161"
+  "userId": "234",
+  "movieId": "123"
 }
 
 //testing postFavorites
@@ -121,7 +121,7 @@ GET http://localhost:8081/favorites/
 
 
 {
-  "userId": "635ab8dfc407faf9f73deaf2",
-  movieId: "tt0111161"
+  "userId": "234",
+  "movieId": "123"
 }
 

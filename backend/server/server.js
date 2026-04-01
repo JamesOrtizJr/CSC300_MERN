@@ -23,6 +23,12 @@ const getAllUserCommentsRoute = require('./routes/userComments/userGetAllUserCom
 const getReviewsRoute = require('./routes/getReviews');
 const postReviewRoute = require('./routes/postReview');
 
+
+
+
+//ADMIN
+const adminRoute = require('./routes/adminRoutes/admin');
+
 require('dotenv').config();
 const SERVER_PORT = 8081
 // butt
@@ -65,3 +71,9 @@ if (process.env.NODE_ENV !== "test") {
   }
   
   module.exports = app;
+
+
+
+
+  //ADMIN
+app.use('/admin', adminRoute);

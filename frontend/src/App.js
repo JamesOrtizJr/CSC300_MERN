@@ -15,9 +15,6 @@ import { createContext, useState, useEffect } from "react";
 import getUserInfo from "./utilities/decodeJwt";
 import MbtaAlertsPage from "./components/pages/mbtaAlerts"; //Added for MBTA First Web App Assignment
 import MbtaLinesPage from "./components/pages/mbtaLines";
-import HomePage1 from "./components/pages/homepage1";
-
-
 
 
 export const UserContext = createContext();
@@ -42,7 +39,6 @@ const App = () => {
           <Route path="/privateUserProfile" element={<PrivateUserProfile />} />
           <Route exact path="/mbtaAlerts" element={<MbtaAlertsPage />} />
           <Route exact path="/mbtaLines" element={<MbtaLinesPage />} />
-          <Route exact path="/homepage1" element={<HomePage1 />} />
         </Routes>
       </UserContext.Provider>
     </>

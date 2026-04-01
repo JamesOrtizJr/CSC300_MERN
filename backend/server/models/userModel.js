@@ -22,6 +22,19 @@ const newUserSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+
+    // ADDING for admin page
+    
+    isAdmin: {
+      type: Boolean,
+      default: false
+    },
+
+    isBanned: {
+      type: Boolean,
+      default: false
+    },
+
   },
   { collection: "users" }
 );
