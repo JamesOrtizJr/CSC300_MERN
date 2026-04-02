@@ -82,4 +82,25 @@ router.put("/make-admin/:userId", async (req, res) => {
   }
 });
 
+router.put("/remove-admin/:userId", async (req, res) => {
+  try {
+    const updatedUser = await User.findByIdAndUpdate(
+      req.params.userId,
+      { isAdmin: false },
+      { new: true }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json({
+      message: `User ${updatedUser.username} is no longer an admin.`,
+      user: updatedUser
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Error removing admin", error: error.message });
+  }
+});
+
 module.exports = router;
