@@ -4,7 +4,7 @@ import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
 import { useNavigate } from "react-router-dom";
 
-const PRIMARY_COLOR = "#a2087c";
+const PRIMARY_COLOR = "#d40a0a";
 const SECONDARY_COLOR = "#0c0c1f";
 
 const API_KEY = "ada999e2"; // 🔥 PUT YOUR REAL KEY
@@ -128,7 +128,9 @@ const HomePage1 = () => {
           padding: "20px 40px",
         }}
       >
-        <h2 style={{ color: PRIMARY_COLOR }}>🎬 MovieFinder</h2>
+              <h2>
+               🍿Movies<span style={{ color: "#d40a0a" }}>R</span>us
+              </h2>
 
         <Button
           onClick={() => navigate("/profile")}
@@ -155,7 +157,7 @@ const HomePage1 = () => {
           }}
         >
           <Form.Control
-            placeholder="Search movies..."
+            placeholder="🍭Search movies..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             style={{ height: "50px", borderRadius: "10px" }}
@@ -246,8 +248,11 @@ const HomePage1 = () => {
                 }}
               >
                {row.map((movie) => (
-               <div key={movie.imdbID} style={{ minWidth: "150px" }}>
-                    
+              <div
+                key={movie.imdbID}
+                 style={{ minWidth: "150px", cursor: "pointer" }}
+                  onClick={() => navigate(`/movies/${movie.imdbID}`)}
+              >
                     <img
                       src={
                         movie.Poster !== "N/A"
@@ -279,7 +284,11 @@ const HomePage1 = () => {
             }}
           >
             {movies.map((movie) => (
-              <div key={movie.imdbID}>
+              <div
+                key={movie.imdbID}
+                style={{ cursor: "pointer" }}
+               onClick={() => navigate(`/movies/${movie.imdbID}`)}
+              >
                 <img
                   src={movie.Poster}
                   alt={movie.Title}

@@ -21,7 +21,7 @@ export default function Navbar() {
         <Nav.Link href="/privateUserProfile">Profile</Nav.Link>
         <Nav.Link href="/admin">Admin</Nav.Link>
         <Nav.Link href="/login">Login</Nav.Link>
-        <Nav.Link href="/homepage1">MovieRus</Nav.Link>
+        <Nav.Link href="/homepage1">Home Page</Nav.Link>
         <Nav.Link as={Link} to="/movies/tt1375666">Movie Details</Nav.Link>
      
       </Nav>
