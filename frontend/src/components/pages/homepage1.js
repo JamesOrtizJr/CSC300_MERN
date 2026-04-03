@@ -79,7 +79,7 @@ const HomePage1 = () => {
     try {
       setLoading(true);
 
-      const keywords = ["You", "avengers"];
+      const keywords = ["Law", "avengers"];
 
       const results = await Promise.all(
         keywords.map((word) =>
