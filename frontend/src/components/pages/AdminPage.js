@@ -12,8 +12,9 @@ function AdminPage() {
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [showBannedOnly, setShowBannedOnly] = useState(false);
 
+  const [selectedUserId, setSelectedUserId] = useState("");
   const [selectedUsername, setSelectedUsername] = useState("");
-  const [selectedUserReviews, setSelectedUserReviews] = useState([]);
+  const [selectedUserIsAdmin, setSelectedUserIsAdmin] = useState(false);
 
   useEffect(() => {
     getStats();
@@ -51,10 +52,6 @@ function AdminPage() {
           )
         );
       }
-
-      if (selectedUsername) {
-        getAllUsers();
-      }
     } catch (error) {
       console.log("Error banning user", error);
     }
@@ -71,6 +68,62 @@ function AdminPage() {
       }
     } catch (error) {
       console.log("Error unbanning user", error);
+    }
+  };
+
+  const handleMakeAdmin = async (userId) => {
+    try {
+      const response = await axios.put(
+        `http://localhost:8081/admin/make-admin/${userId}`
+      );
+
+      alert(response.data.message);
+
+      setUsers((prevUsers) =>
+        prevUsers.map((user) =>
+          user._id === userId ? { ...user, isAdmin: true } : user
+        )
+      );
+
+      setFilteredUsers((prevUsers) =>
+        prevUsers.map((user) =>
+          user._id === userId ? { ...user, isAdmin: true } : user
+        )
+      );
+
+      if (selectedUserId === userId) {
+        setSelectedUserIsAdmin(true);
+      }
+    } catch (error) {
+      alert(error.response?.data?.message || "Failed to make admin");
+    }
+  };
+
+  const handleRemoveAdmin = async (userId) => {
+    try {
+      const response = await axios.put(
+        `http://localhost:8081/admin/remove-admin/${userId}`
+      );
+
+      alert(response.data.message);
+
+      setUsers((prevUsers) =>
+        prevUsers.map((user) =>
+          user._id === userId ? { ...user, isAdmin: false } : user
+        )
+      );
+
+      setFilteredUsers((prevUsers) =>
+        prevUsers.map((user) =>
+          user._id === userId ? { ...user, isAdmin: false } : user
+        )
+      );
+
+      if (selectedUserId === userId) {
+        setSelectedUserIsAdmin(false);
+      }
+    } catch (error) {
+      alert(error.response?.data?.message || "Failed to remove admin");
     }
   };
 
@@ -92,8 +145,9 @@ function AdminPage() {
     setSearch("");
     setFilteredUsers([]);
     setShowBannedOnly(false);
+    setSelectedUserId("");
     setSelectedUsername("");
-    setSelectedUserReviews([]);
+    setSelectedUserIsAdmin(false);
   };
 
   const handleShowBannedUsers = () => {
@@ -108,16 +162,10 @@ function AdminPage() {
     setShowBannedOnly(false);
   };
 
-  const getUserReviews = async (userId, username) => {
-    try {
-      const response = await axios.get(`http://localhost:8081/reviews/user/${userId}`);
-      setSelectedUsername(username);
-      setSelectedUserReviews(response.data.reviews);
-    } catch (error) {
-      console.log("Error getting user reviews", error);
-      setSelectedUsername(username);
-      setSelectedUserReviews([]);
-    }
+  const handleSelectUser = (user) => {
+    setSelectedUserId(user._id);
+    setSelectedUsername(user.username);
+    setSelectedUserIsAdmin(user.isAdmin);
   };
 
   const displayedUsers =
@@ -128,7 +176,7 @@ function AdminPage() {
       <div style={styles.headerSection}>
         <h1 style={styles.title}>Admin Dashboard</h1>
         <p style={styles.subtitle}>
-          Manage users, account status, and review activity all in one place.
+          Manage users, account status, and admin access all in one place.
         </p>
       </div>
 
@@ -200,26 +248,41 @@ function AdminPage() {
           <tbody>
             {displayedUsers.length > 0 ? (
               displayedUsers.map((user) => (
-                <tr key={user._id} style={styles.tr}>
+                <tr
+                  key={user._id}
+                  style={
+                    selectedUserId === user._id
+                      ? { ...styles.tr, ...styles.selectedRow }
+                      : styles.tr
+                  }
+                >
                   <td style={styles.td}>
                     <button
-                      onClick={() => getUserReviews(user._id, user.username)}
+                      onClick={() => handleSelectUser(user)}
                       style={styles.usernameButton}
                     >
                       {user.username}
                     </button>
                   </td>
+
                   <td style={styles.td}>{user.email}</td>
+
                   <td style={styles.td}>
-                    <span style={user.isAdmin ? styles.adminBadge : styles.normalBadge}>
+                    <span
+                      style={user.isAdmin ? styles.adminBadge : styles.normalBadge}
+                    >
                       {user.isAdmin ? "Admin" : "User"}
                     </span>
                   </td>
+
                   <td style={styles.td}>
-                    <span style={user.isBanned ? styles.bannedBadge : styles.activeBadge}>
+                    <span
+                      style={user.isBanned ? styles.bannedBadge : styles.activeBadge}
+                    >
                       {user.isBanned ? "Banned" : "Active"}
                     </span>
                   </td>
+
                   <td style={styles.td}>
                     {!user.isBanned ? (
                       <button
@@ -250,25 +313,37 @@ function AdminPage() {
         </table>
       </div>
 
-      <div style={styles.reviewsSection}>
+      <div style={styles.adminControlsSection}>
         <h2 style={styles.sectionTitle}>
-          {selectedUsername ? `Reviews by ${selectedUsername}` : "User Reviews"}
+          {selectedUsername ? `Admin Controls for ${selectedUsername}` : "Admin Controls"}
         </h2>
 
         {selectedUsername === "" ? (
-          <p style={styles.viewLabel}>Click a username to view their reviews.</p>
-        ) : selectedUserReviews.length > 0 ? (
-          <div>
-            {selectedUserReviews.map((review) => (
-              <div key={review._id} style={styles.reviewCard}>
-                <p><strong>Movie ID:</strong> {review.imdbID}</p>
-                <p><strong>Rating:</strong> {review.rating}</p>
-                <p><strong>Comment:</strong> {review.comment || "No comment"}</p>
-              </div>
-            ))}
-          </div>
+          <p style={styles.viewLabel}>Click a username to manage admin access.</p>
         ) : (
-          <p style={styles.viewLabel}>This user has no reviews.</p>
+          <div style={styles.adminControlsBox}>
+            <p style={styles.selectedUserText}>
+              Selected User: <strong>{selectedUsername}</strong>
+            </p>
+
+            <div style={styles.adminButtonRow}>
+              {!selectedUserIsAdmin ? (
+                <button
+                  onClick={() => handleMakeAdmin(selectedUserId)}
+                  style={styles.makeAdminButton}
+                >
+                  Make Admin
+                </button>
+              ) : (
+                <button
+                  onClick={() => handleRemoveAdmin(selectedUserId)}
+                  style={styles.removeAdminButton}
+                >
+                  Remove Admin
+                </button>
+              )}
+            </div>
+          </div>
         )}
       </div>
     </div>
@@ -349,8 +424,8 @@ const styles = {
     borderRadius: "10px",
     border: "none",
     outline: "none",
-    color: "black",            
-    backgroundColor: "white" 
+    color: "black",
+    backgroundColor: "white"
   },
   searchButton: {
     padding: "10px 18px",
@@ -403,6 +478,9 @@ const styles = {
   },
   tr: {
     borderBottom: "1px solid #e5e7eb"
+  },
+  selectedRow: {
+    backgroundColor: "#eef2ff"
   },
   td: {
     padding: "14px"
@@ -457,6 +535,24 @@ const styles = {
     cursor: "pointer",
     fontWeight: "bold"
   },
+  makeAdminButton: {
+    backgroundColor: "#7c3aed",
+    color: "white",
+    border: "none",
+    padding: "10px 16px",
+    borderRadius: "8px",
+    cursor: "pointer",
+    fontWeight: "bold"
+  },
+  removeAdminButton: {
+    backgroundColor: "#f59e0b",
+    color: "white",
+    border: "none",
+    padding: "10px 16px",
+    borderRadius: "8px",
+    cursor: "pointer",
+    fontWeight: "bold"
+  },
   emptyState: {
     textAlign: "center",
     padding: "20px",
@@ -471,19 +567,27 @@ const styles = {
     textDecoration: "underline",
     padding: 0
   },
-  reviewsSection: {
+  adminControlsSection: {
     backgroundColor: "rgba(255,255,255,0.1)",
     borderRadius: "16px",
     padding: "20px",
     marginTop: "30px",
     boxShadow: "0 6px 18px rgba(0,0,0,0.2)"
   },
-  reviewCard: {
+  adminControlsBox: {
     backgroundColor: "white",
     color: "#111827",
     borderRadius: "12px",
-    padding: "15px",
+    padding: "18px"
+  },
+  selectedUserText: {
+    marginTop: 0,
     marginBottom: "15px"
+  },
+  adminButtonRow: {
+    display: "flex",
+    gap: "12px",
+    flexWrap: "wrap"
   }
 };
 

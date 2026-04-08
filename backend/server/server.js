@@ -1,6 +1,7 @@
 const express = require("express");
 const app = express();
 const cors = require('cors')
+const movieRoutes = require('./routes/movies');
 const loginRoute = require('./routes/userLogin')
 const getAllUsersRoute = require('./routes/userGetAllUsers')
 const registerRoute = require('./routes/userSignUp')
@@ -10,6 +11,7 @@ const editUser = require('./routes/userEditUser')
 const deleteUser = require('./routes/userDeleteAll')
 const postWatchList = require('./routes/postWatchList')
 const getWatchList = require('./routes/getWatchList')
+
 
 
 const postFavoritesRoute = require('./routes/postFavorites')
@@ -40,6 +42,7 @@ app.use('/user', getUserByIdRoute)
 app.use('/user', editUser)
 app.use('/user', deleteUser)
 
+
 app.use ('/userMakeComment', makeCommentRoute);
 app.use ('/userGetAllUserComments', getAllUserCommentsRoute);
 
@@ -52,7 +55,7 @@ app.use('/reviews', postReviewRoute);
 
 app.use('/watchlist', postWatchList);
 app.use('/watchlist', getWatchList);
-
+app.use('/movies', movieRoutes);
 /*
 app.listen(SERVER_PORT, (req, res) => {
     console.log(`The backend service is running on port ${SERVER_PORT} and waiting for requests.`);

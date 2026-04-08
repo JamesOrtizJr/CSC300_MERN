@@ -7,14 +7,14 @@ import './index.css';
 // We import all the components we need in our app
 import Navbar from "./components/navbar";
 import LandingPage from "./components/pages/landingPage";
-import HomePage from "./components/pages/homePage";
+import HomePage1 from "./components/pages/homepage1";
 import Login from "./components/pages/loginPage";
 import Signup from "./components/pages/registerPage";
 import PrivateUserProfile from "./components/pages/privateUserProfilePage";
 import { createContext, useState, useEffect } from "react";
 import getUserInfo from "./utilities/decodeJwt";
-import MbtaAlertsPage from "./components/pages/mbtaAlerts"; //Added for MBTA First Web App Assignment
-import MbtaLinesPage from "./components/pages/mbtaLines";
+import MovieDetailsPage from "./components/pages/movieDetailsPage";
+import CastCrewPage from "./components/pages/castAndCrewPage";
 
 
 
@@ -28,7 +28,7 @@ export const UserContext = createContext();
 //test change
 //test again
 const App = () => {
-  const [user, setUser] = useState();
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
     setUser(getUserInfo());
@@ -37,20 +37,18 @@ const App = () => {
   return (
     <>
       <Navbar />
-      <UserContext.Provider value={user}>
+      <UserContext.Provider value={{user, setUser}}>
         <Routes>
-          <Route exact path="/" element={<LandingPage />} />
-          <Route exact path="/home" element={<HomePage />} />
-          <Route exact path="/login" element={<Login />} />
-          <Route exact path="/signup" element={<Signup />} />
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/homepage1" element={<HomePage1 />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
           <Route path="/privateUserProfile" element={<PrivateUserProfile />} />
-          <Route exact path="/mbtaAlerts" element={<MbtaAlertsPage />} />
-          <Route exact path="/mbtaLines" element={<MbtaLinesPage />} />
 
 
 
-
-
+          <Route path="/movies/:id" element={<MovieDetailsPage />} />
+          <Route path="/movies/:id/cast" element={<CastCrewPage />} />
           <Route path="/admin" element={<AdminPage />} />
         </Routes>
       </UserContext.Provider>
