@@ -30,7 +30,7 @@ const postReviewRoute = require('./routes/postReview');
 const adminRoute = require('./routes/adminRoutes/admin');
 
 require('dotenv').config();
-const SERVER_PORT = 8081
+const SERVER_PORT = process.env.PORT || 8081
 // butt
 dbConnection()
 app.use(cors({origin: '*'}))
