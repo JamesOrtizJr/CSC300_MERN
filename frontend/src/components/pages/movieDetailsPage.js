@@ -1,228 +1,341 @@
-import { useState, useEffect, useContext } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { UserContext } from "../../App";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import Button from "react-bootstrap/Button";
+import { useNavigate, useParams } from "react-router-dom";
 
-function MovieDetailsPage() {
+const PRIMARY_COLOR = "#d40a0a";
+const SECONDARY_COLOR = "#0c0c1f";
+const TMDB_API_KEY = "b794dfff76239d4deb38d526dc781cd7";
+
+const MovieDetailsPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const userContext = useContext(UserContext);
-  const user = userContext?.user;
+
   const [movie, setMovie] = useState(null);
-  const [isFavorite, setIsFavorite] = useState(false);
-  const [watchLater, setWatchLater] = useState(false);
-  const [rating, setRating] = useState(0);
-  const [hoverRating, setHoverRating] = useState(0);
+  const [cast, setCast] = useState([]);
+  const [trailers, setTrailers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const [showAuthPopup, setShowAuthPopup] = useState(false);
-
-  useEffect(() => {
-    fetch(`https://www.omdbapi.com/?i=${id}&apikey=ada999e2`)
-      .then((res) => res.json())
-      .then((data) => setMovie(data))
-      .catch((err) => console.error("Error fetching movie:", err));
-  }, [id]);
-
-  if (!movie) return <p className="p-6">Loading...</p>;
-
-  if (movie.Response === "False") {
-    return <p className="p-6">Movie not found.</p>;
-  }
-
-  const yearNumber = parseInt(movie.Year, 10);
-  const decadeTag = !isNaN(yearNumber)
-    ? `${Math.floor(yearNumber / 10) * 10}s`
-    : null;
-
-  const requireLogin = (action) => {
-    if (!user) {
-      setShowAuthPopup(true);
-      return;
-    }
-
-    action();
+  const getPosterUrl = (posterPath) => {
+    return posterPath
+      ? `https://image.tmdb.org/t/p/w500${posterPath}`
+      : "https://via.placeholder.com/300x450";
   };
 
+  const getBackdropUrl = (backdropPath) => {
+    return backdropPath
+      ? `https://image.tmdb.org/t/p/original${backdropPath}`
+      : "";
+  };
+
+  useEffect(() => {
+    const fetchMovieDetails = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        const [movieRes, creditsRes, videosRes] = await Promise.all([
+          axios.get(`https://api.themoviedb.org/3/movie/${id}`, {
+            params: {
+              api_key: TMDB_API_KEY,
+              language: "en-US",
+            },
+          }),
+          axios.get(`https://api.themoviedb.org/3/movie/${id}/credits`, {
+            params: {
+              api_key: TMDB_API_KEY,
+              language: "en-US",
+            },
+          }),
+          axios.get(`https://api.themoviedb.org/3/movie/${id}/videos`, {
+            params: {
+              api_key: TMDB_API_KEY,
+              language: "en-US",
+            },
+          }),
+        ]);
+
+        setMovie(movieRes.data);
+        setCast((creditsRes.data.cast || []).slice(0, 8));
+
+        const officialTrailers = (videosRes.data.results || []).filter(
+          (video) =>
+            video.site === "YouTube" &&
+            (video.type === "Trailer" || video.type === "Teaser")
+        );
+
+        setTrailers(officialTrailers);
+      } catch (err) {
+        console.error("Error fetching movie details:", err);
+        setError("Could not load movie details.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (id) {
+      fetchMovieDetails();
+    }
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          background: SECONDARY_COLOR,
+          color: "#fff",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          fontSize: "20px",
+        }}
+      >
+        Loading movie details...
+      </div>
+    );
+  }
+
+  if (error || !movie) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          background: SECONDARY_COLOR,
+          color: "#fff",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+          padding: "20px",
+          textAlign: "center",
+        }}
+      >
+        <h2>{error || "Movie not found."}</h2>
+        <Button
+          onClick={() => navigate("/homepage1")}
+          style={{
+            marginTop: "20px",
+            background: PRIMARY_COLOR,
+            border: "none",
+            borderRadius: "10px",
+            padding: "10px 20px",
+          }}
+        >
+          Back to Home
+        </Button>
+      </div>
+    );
+  }
+
   return (
-    <div className="p-8">
-      <div className="flex gap-8 items-stretch">
-        {/* Left column */}
-        <div className="flex flex-col">
-          <div className="w-72 h-[26rem] bg-black rounded-md shadow-md flex items-center justify-center overflow-hidden">
-            <img
-              src={movie.Poster}
-              alt={`${movie.Title} poster`}
-              className="max-w-full max-h-full object-contain"
-            />
-          </div>
-
-          <button
-            onClick={() => navigate(`/movies/${id}/cast`)}
-            className="mt-4 w-72 h-14 border border-black rounded-md text-lg font-medium bg-white hover:bg-gray-100"
+    <div
+      style={{
+        minHeight: "100vh",
+        background: SECONDARY_COLOR,
+        color: "#fff",
+      }}
+    >
+      {/* HERO SECTION */}
+      <div
+        style={{
+          backgroundImage: movie.backdrop_path
+            ? `linear-gradient(rgba(12,12,31,0.85), rgba(12,12,31,0.95)), url(${getBackdropUrl(
+                movie.backdrop_path
+              )})`
+            : "none",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          padding: "40px 20px",
+        }}
+      >
+        <div
+          style={{
+            maxWidth: "1100px",
+            margin: "0 auto",
+          }}
+        >
+          <Button
+            onClick={() => navigate(-1)}
+            style={{
+              marginBottom: "30px",
+              background: PRIMARY_COLOR,
+              border: "none",
+              borderRadius: "10px",
+              padding: "10px 18px",
+            }}
           >
-            Cast & Crew
-          </button>
-        </div>
+            ← Back
+          </Button>
 
-        {/* Right column */}
-        <div className="flex-1 h-[30rem] flex flex-col">
-          {/* Header */}
-          <div className="flex justify-between items-start gap-6">
-            {/* Title + tags */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "300px 1fr",
+              gap: "30px",
+              alignItems: "start",
+            }}
+          >
             <div>
-              <h1 className="text-4xl font-bold mb-3">{movie.Title}</h1>
-
-              <div className="flex flex-wrap gap-2">
-                {movie.Genre?.split(", ").map((tag, i) => (
-                  <span
-                    key={i}
-                    className="border border-black px-3 py-1 rounded-md text-sm bg-white"
-                  >
-                    {tag}
-                  </span>
-                ))}
-
-                {movie.Runtime && (
-                  <span className="border border-black px-3 py-1 rounded-md text-sm bg-white">
-                    {movie.Runtime}
-                  </span>
-                )}
-
-                {movie.Year && (
-                  <span className="border border-black px-3 py-1 rounded-md text-sm bg-white">
-                    {movie.Year}
-                  </span>
-                )}
-
-                {decadeTag && (
-                  <span className="border border-black px-3 py-1 rounded-md text-sm bg-white">
-                    {decadeTag}
-                  </span>
-                )}
-              </div>
+              <img
+                src={getPosterUrl(movie.poster_path)}
+                alt={movie.title}
+                style={{
+                  width: "100%",
+                  borderRadius: "15px",
+                  boxShadow: "0 8px 20px rgba(0,0,0,0.4)",
+                }}
+              />
             </div>
 
-            {/* Actions */}
-            <div className="flex flex-col items-end min-w-[280px]">
-              {/* Watch Later + Favorite */}
-              <div className="flex gap-6 mb-3">
-                <button
-                  onClick={() =>
-                    requireLogin(() => setWatchLater(!watchLater))
-                  }
-                  className="flex items-center gap-2 text-lg font-medium hover:opacity-70"
+            <div>
+              <h1 style={{ fontSize: "42px", fontWeight: "700", marginBottom: "10px" }}>
+                {movie.title}
+              </h1>
+
+              {movie.tagline && (
+                <p
+                  style={{
+                    fontStyle: "italic",
+                    color: "#ccc",
+                    marginBottom: "20px",
+                    fontSize: "18px",
+                  }}
                 >
-                  <span className="w-5 h-5 rounded-full border border-black flex items-center justify-center text-sm bg-white">
-                    {watchLater ? "−" : "+"}
-                  </span>
-                  Watch Later
-                </button>
+                  {movie.tagline}
+                </p>
+              )}
 
-                <button
-                  onClick={() =>
-                    requireLogin(() => setIsFavorite(!isFavorite))
-                  }
-                  className="flex items-center gap-2 text-lg font-medium hover:opacity-70"
-                >
-                  <span
-                    className={`text-2xl ${
-                      isFavorite ? "text-yellow-400" : "text-white"
-                    }`}
-                    style={{ WebkitTextStroke: "1px black" }}
-                  >
-                    ★
-                  </span>
-                  Favorite
-                </button>
+              <div style={{ marginBottom: "20px", lineHeight: "1.9" }}>
+                <p>
+                  <strong>Release Date:</strong> {movie.release_date || "N/A"}
+                </p>
+                <p>
+                  <strong>Rating:</strong>{" "}
+                  {movie.vote_average ? `${movie.vote_average}/10` : "N/A"}
+                </p>
+                <p>
+                  <strong>Runtime:</strong>{" "}
+                  {movie.runtime ? `${movie.runtime} minutes` : "N/A"}
+                </p>
+                <p>
+                  <strong>Genres:</strong>{" "}
+                  {movie.genres && movie.genres.length > 0
+                    ? movie.genres.map((genre) => genre.name).join(", ")
+                    : "N/A"}
+                </p>
+                <p>
+                  <strong>Language:</strong>{" "}
+                  {movie.original_language
+                    ? movie.original_language.toUpperCase()
+                    : "N/A"}
+                </p>
               </div>
 
-              {/* Rating */}
-              <div
-                className="flex gap-1 justify-center w-full"
-                onMouseLeave={() => setHoverRating(0)}
-              >
-                {[1, 2, 3, 4, 5].map((star) => {
-                  const isActive = star <= (hoverRating || rating);
-
-                  return (
-                    <button
-                      key={star}
-                      onClick={() => requireLogin(() => setRating(star))}
-                      onMouseEnter={() => setHoverRating(star)}
-                      className="text-[2rem] transition-transform duration-150 hover:scale-110"
-                    >
-                      <span
-                        className={`${
-                          isActive ? "text-yellow-400" : "text-white"
-                        }`}
-                        style={{ WebkitTextStroke: "1px black" }}
-                      >
-                        ★
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          {/* Bottom section */}
-          <div className="mt-10 flex gap-6 flex-1 min-h-0">
-            <div className="flex-1 border border-black rounded-md p-5 bg-white flex flex-col overflow-hidden">
-              <h2 className="text-xl font-semibold mb-3">Description</h2>
-              <div className="overflow-y-auto">
-                <p className="leading-relaxed">{movie.Plot}</p>
-              </div>
-            </div>
-
-            <div className="flex-1 border border-black rounded-md p-5 bg-white flex flex-col overflow-hidden">
-              <h2 className="text-xl font-semibold mb-3">Comments</h2>
-
-              <div className="text-gray-500 mb-4 overflow-y-auto">
-                No comments yet.
-              </div>
-
-              <div className="mt-auto">
-                <input
-                  type="text"
-                  placeholder="Add a comment..."
-                  className="border border-gray-400 rounded-md p-2 w-full"
-                />
+              <div>
+                <h4 style={{ marginBottom: "10px" }}>Overview</h4>
+                <p style={{ color: "#ddd", fontSize: "17px", lineHeight: "1.7" }}>
+                  {movie.overview || "No description available."}
+                </p>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Auth popup */}
-      {showAuthPopup && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-md shadow-lg p-6 w-[26rem] text-center">
-            <h2 className="text-2xl font-semibold mb-3">Sign in required</h2>
-            <p className="mb-6 text-gray-700">
-              You need to sign in to add movies to your watch list, favorite
-              movies, or leave a rating.
-            </p>
+      {/* EXTRA DETAILS */}
+      <div
+        style={{
+          maxWidth: "1100px",
+          margin: "0 auto",
+          padding: "40px 20px",
+        }}
+      >
+        {/* CAST */}
+        <div style={{ marginBottom: "50px" }}>
+          <h3 style={{ marginBottom: "20px" }}>Top Cast</h3>
 
-            <div className="flex justify-center gap-4">
-              <button
-                onClick={() => navigate("/login")}
-                className="border border-black rounded-md px-4 py-2 bg-yellow-200 hover:bg-yellow-300"
-              >
-                Sign In
-              </button>
-
-              <button
-                onClick={() => setShowAuthPopup(false)}
-                className="border border-black rounded-md px-4 py-2 bg-white hover:bg-gray-100"
-              >
-                Cancel
-              </button>
+          {cast.length > 0 ? (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
+                gap: "20px",
+              }}
+            >
+              {cast.map((actor) => (
+                <div
+                  key={actor.cast_id || actor.credit_id}
+                  style={{
+                    background: "#181830",
+                    borderRadius: "14px",
+                    padding: "15px",
+                    textAlign: "center",
+                  }}
+                >
+                  <img
+                    src={
+                      actor.profile_path
+                        ? `https://image.tmdb.org/t/p/w300${actor.profile_path}`
+                        : "https://via.placeholder.com/200x300"
+                    }
+                    alt={actor.name}
+                    style={{
+                      width: "100%",
+                      borderRadius: "10px",
+                      marginBottom: "10px",
+                    }}
+                  />
+                  <p style={{ margin: 0, fontWeight: "700" }}>{actor.name}</p>
+                  <p style={{ margin: 0, color: "#bbb", fontSize: "14px" }}>
+                    {actor.character}
+                  </p>
+                </div>
+              ))}
             </div>
-          </div>
+          ) : (
+            <p style={{ color: "#ccc" }}>No cast information available.</p>
+          )}
         </div>
-      )}
+
+        {/* TRAILER */}
+        <div style={{ marginBottom: "40px" }}>
+          <h3 style={{ marginBottom: "20px" }}>Trailer</h3>
+
+          {trailers.length > 0 ? (
+            <div
+              style={{
+                position: "relative",
+                paddingBottom: "56.25%",
+                height: 0,
+                overflow: "hidden",
+                borderRadius: "15px",
+              }}
+            >
+              <iframe
+                title="Movie Trailer"
+                src={`https://www.youtube.com/embed/${trailers[0].key}`}
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: "100%",
+                  height: "100%",
+                  borderRadius: "15px",
+                }}
+              />
+            </div>
+          ) : (
+            <p style={{ color: "#ccc" }}>No trailer available.</p>
+          )}
+        </div>
+      </div>
     </div>
   );
-}
+};
 
 export default MovieDetailsPage;

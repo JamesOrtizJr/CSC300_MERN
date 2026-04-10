@@ -6,8 +6,7 @@ import { useNavigate } from "react-router-dom";
 
 const PRIMARY_COLOR = "#d40a0a";
 const SECONDARY_COLOR = "#0c0c1f";
-
-const API_KEY = "ada999e2"; // 🔥 PUT YOUR REAL KEY
+const TMDB_API_KEY = "b794dfff76239d4deb38d526dc781cd7";
 
 const HomePage1 = () => {
   const [rows, setRows] = useState([]);
@@ -24,7 +23,13 @@ const HomePage1 = () => {
 
   const toggleMode = () => setLight(!light);
 
-  // 🔍 SEARCH
+  const getPosterUrl = (posterPath) => {
+    return posterPath
+      ? `https://image.tmdb.org/t/p/w500${posterPath}`
+      : "https://via.placeholder.com/300x450";
+  };
+
+  // SEARCH
   const handleSearch = async () => {
     if (!search.trim()) return;
 
@@ -32,97 +37,107 @@ const HomePage1 = () => {
       setLoading(true);
 
       const res = await axios.get(
-        `https://www.omdbapi.com/?apikey=${API_KEY}&s=${search}`
+        "https://api.themoviedb.org/3/search/movie",
+        {
+          params: {
+            api_key: TMDB_API_KEY,
+            query: search,
+            language: "en-US",
+            include_adult: false,
+          },
+        }
       );
 
       setRows([]);
-
-      if (res.data.Response === "True") {
-        setMovies(res.data.Search);
-      } else {
-        setMovies([]);
-      }
-
-      setLoading(false);
+      setMovies(res.data.results || []);
     } catch (err) {
-      console.error(err);
+      console.error("Search error:", err);
+      setMovies([]);
+    } finally {
       setLoading(false);
     }
   };
 
-  // 🎯 CATEGORY
-  const fetchByCategory = async (genre) => {
-     try {
-    setLoading(true);
+  // CATEGORY
+  const fetchByCategory = async (genreName) => {
+    try {
+      setLoading(true);
 
-    // Step 1: get a batch of movies (broad search)
-    const res = await axios.get(
-      `https://www.omdbapi.com/?apikey=${API_KEY}&s=movie&type=movie`
-    );
-
-    if (res.data.Response !== "True") {
-      setMovies([]);
-      setLoading(false);
-      return;
-    }
-
-    // Step 2: fetch full details for each movie
-    const detailedMovies = await Promise.all(
-      res.data.Search.slice(0, 10).map((movie) =>
-        axios.get(
-          `https://www.omdbapi.com/?apikey=${API_KEY}&i=${movie.imdbID}`
-        )
-      )
-    );
-
-    // Step 3: filter by genre
-    const filtered = detailedMovies
-      .map((m) => m.data)
-      .filter((movie) =>
-        movie.Genre && movie.Genre.toLowerCase().includes(genre.toLowerCase())
+      const genreRes = await axios.get(
+        "https://api.themoviedb.org/3/genre/movie/list",
+        {
+          params: {
+            api_key: TMDB_API_KEY,
+            language: "en-US",
+          },
+        }
       );
 
-    setRows([]);
-    setMovies(filtered);
-    setLoading(false);
+      const genreObj = (genreRes.data.genres || []).find(
+        (g) => g.name.toLowerCase() === genreName.toLowerCase()
+      );
 
-  } catch (err) {
-    console.error(err);
-    setLoading(false);
-  }
+      if (!genreObj) {
+        setRows([]);
+        setMovies([]);
+        return;
+      }
+
+      const res = await axios.get(
+        "https://api.themoviedb.org/3/discover/movie",
+        {
+          params: {
+            api_key: TMDB_API_KEY,
+            language: "en-US",
+            sort_by: "popularity.desc",
+            include_adult: false,
+            include_video: false,
+            with_genres: genreObj.id,
+            page: 1,
+          },
+        }
+      );
+
+      setRows([]);
+      setMovies(res.data.results || []);
+    } catch (err) {
+      console.error("Category fetch error:", err);
+      setMovies([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // 🎬 LOAD HOME (ALWAYS WORKS)
+  // LOAD HOME
   const loadHomeMovies = async () => {
     try {
       setLoading(true);
 
-      const keywords = ["you", "avengers"];
+      const [trendingRes, topRatedRes] = await Promise.all([
+        axios.get("https://api.themoviedb.org/3/trending/movie/week", {
+          params: {
+            api_key: TMDB_API_KEY,
+          },
+        }),
+        axios.get("https://api.themoviedb.org/3/movie/top_rated", {
+          params: {
+            api_key: TMDB_API_KEY,
+            language: "en-US",
+            page: 1,
+          },
+        }),
+      ]);
 
-      const results = await Promise.all(
-        keywords.map((word) =>
-          axios.get(
-            `https://www.omdbapi.com/?apikey=${API_KEY}&s=${word}`
-          )
-        )
-      );
+      const trendingMovies = trendingRes.data.results || [];
+      const recommendedMovies = topRatedRes.data.results || [];
 
-      const formatted = results.map((res) =>
-        res.data && res.data.Search ? res.data.Search : []
-      );
-
-      // fallback if API fails
-      if (formatted.every((row) => row.length === 0)) {
-        setMovies([]);
-        setRows([]);
-      } else {
-        setRows(formatted);
-        setMovies([]);
-      }
-
-      setLoading(false);
+      setRows([trendingMovies, recommendedMovies]);
+      setMovies([]);
     } catch (err) {
-      console.error(err);
+      console.error("Home load error:", err);
+      setRows([]);
+      setMovies([]);
+    } finally {
       setLoading(false);
     }
   };
@@ -137,7 +152,6 @@ const HomePage1 = () => {
 
   return (
     <div style={{ minHeight: "100vh", background: bg, color: textColor }}>
-      
       {/* HEADER */}
       <div
         style={{
@@ -146,9 +160,9 @@ const HomePage1 = () => {
           padding: "20px 40px",
         }}
       >
-              <h2>
-               🍿Movies<span style={{ color: "#d40a0a" }}>R</span>us
-              </h2>
+        <h2>
+          🍿Movies<span style={{ color: "#d40a0a" }}>R</span>us
+        </h2>
 
         <Button
           onClick={() => navigate("/profile")}
@@ -166,7 +180,6 @@ const HomePage1 = () => {
 
       {/* SEARCH */}
       <div style={{ maxWidth: "900px", margin: "0 auto", padding: "20px" }}>
-        
         <Form
           className="d-flex mb-3"
           onSubmit={(e) => {
@@ -195,15 +208,18 @@ const HomePage1 = () => {
           </Button>
         </Form>
 
-        {/* CATEGORY + RANDOM (SAME SIZE) */}
+        {/* CATEGORY + RANDOM */}
         <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
-          
           <Form.Select
             value={category}
             onChange={(e) => {
               const value = e.target.value;
               setCategory(value);
-              if (value) fetchByCategory(value);
+              if (value) {
+                fetchByCategory(value);
+              } else {
+                loadHomeMovies();
+              }
             }}
             style={{
               flex: 1,
@@ -215,14 +231,12 @@ const HomePage1 = () => {
             <option>Action</option>
             <option>Adventure</option>
             <option>Animation</option>
-            <option>Crime</option>
             <option>Comedy</option>
-            <option>Action</option>
+            <option>Crime</option>
             <option>Documentary</option>
             <option>Drama</option>
             <option>Family</option>
             <option>Fantasy</option>
-            <option>History</option>
             <option>History</option>
             <option>Horror</option>
             <option>Music</option>
@@ -233,7 +247,6 @@ const HomePage1 = () => {
             <option>Thriller</option>
             <option>War</option>
             <option>Western</option>
-
           </Form.Select>
 
           <Button
@@ -262,18 +275,12 @@ const HomePage1 = () => {
 
       {/* MOVIES */}
       <div style={{ padding: "20px 40px" }}>
-        
         {loading ? (
           <p style={{ textAlign: "center" }}>Loading...</p>
-
         ) : rows.some((row) => row.length > 0) ? (
-
           rows.map((row, index) => (
             <div key={index} style={{ marginBottom: "30px" }}>
-              
-              <h4>
-                {index === 0 ? "🔥 Trending" : "⭐ Recommended"}
-              </h4>
+              <h4>{index === 0 ? "🔥 Trending" : "⭐ Recommended"}</h4>
 
               <div
                 style={{
@@ -282,58 +289,49 @@ const HomePage1 = () => {
                   gap: "15px",
                 }}
               >
-               {row.map((movie) => (
-              <div
-                key={movie.imdbID}
-                 style={{ minWidth: "150px", cursor: "pointer" }}
-                  onClick={() => navigate(`/movies/${movie.imdbID}`)}
-              >
+                {row.map((movie) => (
+                  <div
+                    key={movie.id}
+                    style={{ minWidth: "150px", cursor: "pointer" }}
+                    onClick={() => navigate(`/movies/${movie.id}`)}
+                  >
                     <img
-                      src={
-                        movie.Poster !== "N/A"
-                          ? movie.Poster
-                          : "https://via.placeholder.com/300x450"
-                      }
-                      alt={movie.Title}
+                      src={getPosterUrl(movie.poster_path)}
+                      alt={movie.title}
                       style={{
                         width: "100%",
                         borderRadius: "10px",
                       }}
                     />
-
-                    <p style={{ fontSize: "14px" }}>{movie.Title}</p>
+                    <p style={{ fontSize: "14px" }}>{movie.title}</p>
                   </div>
                 ))}
               </div>
             </div>
           ))
-
         ) : movies.length > 0 ? (
-
           <div
             style={{
               display: "grid",
-              gridTemplateColumns:
-                "repeat(auto-fill, minmax(200px, 1fr))",
+              gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
               gap: "20px",
             }}
           >
             {movies.map((movie) => (
               <div
-                key={movie.imdbID}
+                key={movie.id}
                 style={{ cursor: "pointer" }}
-               onClick={() => navigate(`/movies/${movie.imdbID}`)}
+                onClick={() => navigate(`/movies/${movie.id}`)}
               >
                 <img
-                  src={movie.Poster}
-                  alt={movie.Title}
+                  src={getPosterUrl(movie.poster_path)}
+                  alt={movie.title}
                   style={{ width: "100%", borderRadius: "10px" }}
                 />
-                <p>{movie.Title}</p>
+                <p>{movie.title}</p>
               </div>
             ))}
           </div>
-
         ) : (
           <p style={{ textAlign: "center" }}>No movies found</p>
         )}
