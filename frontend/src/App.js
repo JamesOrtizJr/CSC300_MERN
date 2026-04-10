@@ -20,8 +20,11 @@ import CastCrewPage from "./components/pages/castAndCrewPage";
 
 
 
+
 // ADMIN
 import AdminPage from "./components/pages/AdminPage";
+// Roulette
+import MovieRoulette from "./components/pages/MovieRoulette";
 
 
 export const UserContext = createContext();
@@ -50,6 +53,7 @@ const App = () => {
           <Route path="/movies/:id" element={<MovieDetailsPage />} />
           <Route path="/movies/:id/cast" element={<CastCrewPage />} />
           <Route path="/admin" element={<AdminPage />} />
+          <Route path="/movieRoulette" element={<MovieRoulette />} />
         </Routes>
       </UserContext.Provider>
     </>

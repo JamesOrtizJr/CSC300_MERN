@@ -114,7 +114,7 @@ const HomePage1 = () => {
   }, []);
 
   const handleRandom = () => {
-    navigate("/roulette");
+    navigate("/movieRoulette");
   };
 
   return (
