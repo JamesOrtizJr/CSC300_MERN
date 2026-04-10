@@ -15,29 +15,16 @@ const Register = () => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault(); // ✅ prevents page refresh
+    e.preventDefault();
     setError("");
 
     try {
-      const response = await axios.post(
-        "http://localhost:8097/user/signup",
-        data
-      );
-
+      const response = await axios.post("http://localhost:8081/user/signup", data);
       console.log("Signup successful:", response.data);
-
-      // ✅ redirect user to login after successful signup
       navigate("/login");
     } catch (error) {
-      console.error(
-        "Signup failed:",
-        error.response?.data || error.message
-      );
-
-      // ✅ display error message to user
-      setError(
-        error.response?.data?.message || "Signup failed. Please try again."
-      );
+      console.error("Signup failed:", error.response?.data || error.message);
+      setError(error.response?.data?.message || "Signup failed. Please try again.");
     }
   };
 
@@ -56,9 +43,7 @@ const Register = () => {
       <h2 style={{ marginBottom: "6px" }}>
         🍿Movies<span style={{ color: PRIMARY_COLOR }}>R</span>us
       </h2>
-      <p style={{ color: "#aaa", marginBottom: "30px" }}>
-        Create your account.
-      </p>
+      <p style={{ color: "#aaa", marginBottom: "30px" }}>Create your account.</p>
 
       <div
         style={{
@@ -186,10 +171,7 @@ const Register = () => {
             }}
           >
             Already have an account?{" "}
-            <Link
-              to="/login"
-              style={{ color: PRIMARY_COLOR, fontWeight: "bold" }}
-            >
+            <Link to="/login" style={{ color: PRIMARY_COLOR, fontWeight: "bold" }}>
               Log in
             </Link>
           </p>
