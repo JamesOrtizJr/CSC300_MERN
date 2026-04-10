@@ -29,7 +29,7 @@ const Login = () => {
     e.preventDefault();
     setError("");
     try {
-      const { data: res } = await axios.post('http://localhost:8097/user/login', data);
+      const { data: res } = await axios.post('http://localhost:8081/user/login', data);
       const { accessToken } = res;
       localStorage.setItem("accessToken", accessToken);
       if (setUser) setUser(getUserInfo());

@@ -1,9 +1,23 @@
-import jwt_decode from 'jwt-decode'
+import jwtDecode from "jwt-decode";
 
 const getUserInfo = () => {
-    const accessToken = localStorage.getItem("accessToken")
-    if(!accessToken) return undefined
-    return jwt_decode(accessToken)
-}
+  try {
+    const token = localStorage.getItem("accessToken");
 
-export default getUserInfo
+    if (!token) return null;
+
+    const decoded = jwtDecode(token);
+
+    // Optional safety check
+    if (!decoded || !decoded.username) {
+      return null;
+    }
+
+    return decoded;
+  } catch (error) {
+    console.error("Error decoding token:", error);
+    return null;
+  }
+};
+
+export default getUserInfo;

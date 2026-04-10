@@ -1,47 +1,53 @@
 const express = require("express");
 const router = express.Router();
-const z = require('zod')
-const { userLoginValidation } = require('../models/userValidator')
-const newUserModel = require('../models/userModel')
-const bcrypt = require('bcrypt')
-const { generateAccessToken } = require('../utilities/generateToken')
+const { userLoginValidation } = require("../models/userValidator");
+const newUserModel = require("../models/userModel");
+const bcrypt = require("bcrypt");
+const { generateAccessToken } = require("../utilities/generateToken");
 
+router.post("/login", async (req, res) => {
+  try {
+    const { error } = userLoginValidation(req.body);
 
-router.post('/login', async (req, res) => {
+    if (error) {
+      return res.status(400).send({ message: error.errors[0].message });
+    }
 
-  const { error } = userLoginValidation(req.body);
-  if (error) return res.status(400).send({ message: error.errors[0].message });
+    const { username, password } = req.body;
 
-  const { username, password } = req.body
+    const user = await newUserModel.findOne({ username });
 
-  const user = await newUserModel.findOne({ username: username });
+    // Check if the user exists
+    if (!user) {
+      return res
+        .status(401)
+        .send({ message: "Username or password does not exist, try again" });
+    }
 
-  //checks if the user exists
-  if (!user)
+    // Banned users cannot log in
+    if (user.isBanned) {
+      return res.status(403).send({ message: "Account is banned" });
+    }
+
+    // Check if the password is correct
+    const checkPasswordValidity = await bcrypt.compare(password, user.password);
+
+    if (!checkPasswordValidity) {
+      return res
+        .status(401)
+        .send({ message: "Username or password does not exist, try again" });
+    }
+
+    // Create JWT without including the password
+    const accessToken = generateAccessToken(user._id, user.email, user.username);
+
     return res
-      .status(401)
-      .send({ message: "email or password does not exists, try again" });
-
-  //check if the password is correct or not
-  const checkPasswordValidity = await bcrypt.compare(
-    password,
-    user.password
-  );
-
-    // banned users cannot log in
-  if (user.isBanned) {
-    return res.status(403).send({ message: "Account is banned" });
+      .header("Authorization", accessToken)
+      .send({ accessToken });
+  } catch (error) {
+    console.error("Login error:", error);
+    return res.status(500).send({ message: "Internal server error" });
   }
-
-  if (!checkPasswordValidity)
-    return res
-      .status(401)
-      .send({ message: "email or password does not exists, try again" });
-
-  //create json web token if authenticated and send it back to client in header where it is stored in localStorage ( might not be best practice )
-  const accessToken = generateAccessToken(user._id, user.email, user.username, user.password)
-
-  res.header('Authorization', accessToken).send({ accessToken: accessToken })
-})
+});
 
 module.exports = router;
