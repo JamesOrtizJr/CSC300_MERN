@@ -51,27 +51,45 @@ const HomePage1 = () => {
   };
 
   // 🎯 CATEGORY
-  const fetchByCategory = async (cat) => {
-    try {
-      setLoading(true);
+  const fetchByCategory = async (genre) => {
+     try {
+    setLoading(true);
 
-      const res = await axios.get(
-        `https://www.omdbapi.com/?apikey=${API_KEY}&s=${cat}`
+    // Step 1: get a batch of movies (broad search)
+    const res = await axios.get(
+      `https://www.omdbapi.com/?apikey=${API_KEY}&s=movie&type=movie`
+    );
+
+    if (res.data.Response !== "True") {
+      setMovies([]);
+      setLoading(false);
+      return;
+    }
+
+    // Step 2: fetch full details for each movie
+    const detailedMovies = await Promise.all(
+      res.data.Search.slice(0, 10).map((movie) =>
+        axios.get(
+          `https://www.omdbapi.com/?apikey=${API_KEY}&i=${movie.imdbID}`
+        )
+      )
+    );
+
+    // Step 3: filter by genre
+    const filtered = detailedMovies
+      .map((m) => m.data)
+      .filter((movie) =>
+        movie.Genre && movie.Genre.toLowerCase().includes(genre.toLowerCase())
       );
 
-      setRows([]);
+    setRows([]);
+    setMovies(filtered);
+    setLoading(false);
 
-      if (res.data.Response === "True") {
-        setMovies(res.data.Search);
-      } else {
-        setMovies([]);
-      }
-
-      setLoading(false);
-    } catch (err) {
-      console.error(err);
-      setLoading(false);
-    }
+  } catch (err) {
+    console.error(err);
+    setLoading(false);
+  }
   };
 
   // 🎬 LOAD HOME (ALWAYS WORKS)
@@ -193,12 +211,29 @@ const HomePage1 = () => {
               borderRadius: "10px",
             }}
           >
-            <option value="">Category</option>
+            <option value="">Genre</option>
             <option>Action</option>
+            <option>Adventure</option>
+            <option>Animation</option>
+            <option>Crime</option>
             <option>Comedy</option>
+            <option>Action</option>
+            <option>Documentary</option>
             <option>Drama</option>
+            <option>Family</option>
+            <option>Fantasy</option>
+            <option>History</option>
+            <option>History</option>
             <option>Horror</option>
-            <option>Sci-Fi</option>
+            <option>Music</option>
+            <option>Mystery</option>
+            <option>Romance</option>
+            <option>Science Fiction</option>
+            <option>TV Movie</option>
+            <option>Thriller</option>
+            <option>War</option>
+            <option>Western</option>
+
           </Form.Select>
 
           <Button
