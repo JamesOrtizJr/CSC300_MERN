@@ -1,6 +1,6 @@
 import React from "react";
 // We use Route in order to define the different routes of our application
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, Navigate } from "react-router-dom";
 import './css/card.css';
 import './index.css';
 
@@ -15,6 +15,8 @@ import { createContext, useState, useEffect } from "react";
 import getUserInfo from "./utilities/decodeJwt";
 import MovieDetailsPage from "./components/pages/movieDetailsPage";
 import CastCrewPage from "./components/pages/castAndCrewPage";
+
+import AccessDenied from "./components/pages/AccessDenied";
 
 
 
@@ -33,12 +35,15 @@ export const UserContext = createContext();
 const App = () => {
   const [user, setUser] = useState(null);
 
-  useEffect(() => {
-    setUser(getUserInfo());
-  }, []);
+useEffect(() => {
+  const info = getUserInfo();
+  console.log("decoded user:", info);
+  setUser(info);
+}, []);
 
   return (
     <>
+    
       <Navbar />
       <UserContext.Provider value={{user, setUser}}>
         <Routes>
@@ -52,8 +57,13 @@ const App = () => {
 
           <Route path="/movies/:id" element={<MovieDetailsPage />} />
           <Route path="/movies/:id/cast" element={<CastCrewPage />} />
-          <Route path="/admin" element={<AdminPage />} />
-          <Route path="/movieRoulette" element={<MovieRoulette />} />
+          <Route
+            path="/admin"
+            element={user && user.isAdmin ? <AdminPage /> : <AccessDenied />}
+          />
+          <Route path="/movieRoulette" element={<MovieRoulette />} />          
+          
+          
         </Routes>
       </UserContext.Provider>
     </>

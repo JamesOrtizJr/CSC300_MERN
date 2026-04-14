@@ -3,7 +3,7 @@ import getUserInfo from '../utilities/decodeJwt';
 import Container from 'react-bootstrap/Container';
 import Nav from 'react-bootstrap/Nav';
 import ReactNavbar from 'react-bootstrap/Navbar';
-import { Link } from "react-router-dom";
+import { UserContext } from "../App";
 
 export default function Navbar() {
   const [user, setUser] = useState({});
@@ -19,8 +19,10 @@ export default function Navbar() {
       <Nav className="me-auto">
          <Nav.Link href="/homepage1">Home Page</Nav.Link>
           <Nav.Link href="/login">Login</Nav.Link>
-        <Nav.Link href="/admin">Admin</Nav.Link>
-       <Nav.Link href="/privateUserProfile">Profile</Nav.Link>
+            <Nav.Link href="/admin">Admin</Nav.Link>
+               
+       
+        <Nav.Link href="/privateUserProfile">Profile</Nav.Link>
      
       </Nav>
     </Container>

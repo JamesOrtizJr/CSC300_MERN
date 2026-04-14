@@ -1,11 +1,12 @@
 const jwt = require("jsonwebtoken");
 
-const generateAccessToken = (userId, email, username) => {
+const generateAccessToken = (userId, email, username, isAdmin) => {
   try {
     const payload = {
       _id: userId,
       email: email,
       username: username,
+      isAdmin: isAdmin,
     };
 
     const token = jwt.sign(

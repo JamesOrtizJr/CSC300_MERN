@@ -39,7 +39,8 @@ router.post("/login", async (req, res) => {
     }
 
     // Create JWT without including the password
-    const accessToken = generateAccessToken(user._id, user.email, user.username);
+    const accessToken = generateAccessToken(user._id, user.email, user.username,  user.isAdmin
+  );
 
     return res
       .header("Authorization", accessToken)
