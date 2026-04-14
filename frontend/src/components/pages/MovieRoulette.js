@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import Button from "react-bootstrap/Button";
 import Form from "react-bootstrap/Form";
 import axios from "axios";
@@ -48,6 +48,14 @@ const MovieRoulette = () => {
     };
 
     fetchGenres();
+  }, []);
+  
+  useEffect(() => {
+  spinSoundRef.current = new Audio("/spin.mp3");
+  winSoundRef.current = new Audio("/ding.mp3");
+
+  spinSoundRef.current.volume = 0.4;
+  winSoundRef.current.volume = 0.6;
   }, []);
 
   const toggleGenre = (genreObj) => {
@@ -108,37 +116,51 @@ const MovieRoulette = () => {
     return results[Math.floor(Math.random() * results.length)];
   };
 
-  const spinWheel = () => {
-    if (spinning || selectedGenres.length === 0) return;
+  const spinSoundRef = useRef(null);
+  const winSoundRef = useRef(null);
 
-    const randomIndex = Math.floor(Math.random() * selectedGenres.length);
-    const chosenGenre = selectedGenres[randomIndex];
+const spinWheel = () => {
+  if (spinning || selectedGenres.length === 0) return;
 
-    const sliceAngle = 360 / selectedGenres.length;
-    const extraSpins = 360 * 5;
-    const finalRotation =
-      extraSpins + (360 - randomIndex * sliceAngle - sliceAngle / 2);
+  if (spinSoundRef.current) {
+    spinSoundRef.current.currentTime = 0;
+    spinSoundRef.current.play().catch(() => {});
+  }
 
-    setSpinning(true);
-    setMovie(null);
-    setError("");
-    setRotation((prev) => prev + finalRotation);
+  const randomIndex = Math.floor(Math.random() * selectedGenres.length);
+  const chosenGenre = selectedGenres[randomIndex];
 
-    setTimeout(async () => {
-      try {
-        const randomMovie = await getRandomMovieByGenre(chosenGenre.id, decade);
-        setMovie({
-          ...randomMovie,
-          selectedGenreName: chosenGenre.name,
-        });
-      } catch (err) {
-        console.error(err);
-        setError(err.message || "Could not fetch a movie.");
-      } finally {
-        setSpinning(false);
+  const sliceAngle = 360 / selectedGenres.length;
+  const extraSpins = 360 * 5;
+  const finalRotation =
+    extraSpins + (360 - randomIndex * sliceAngle - sliceAngle / 2);
+
+  setSpinning(true);
+  setMovie(null);
+  setError("");
+  setRotation((prev) => prev + finalRotation);
+
+  setTimeout(async () => {
+    try {
+      const randomMovie = await getRandomMovieByGenre(chosenGenre.id, decade);
+
+      if (winSoundRef.current) {
+        winSoundRef.current.currentTime = 0;
+        winSoundRef.current.play().catch(() => {});
       }
-    }, 4000);
-  };
+
+      setMovie({
+        ...randomMovie,
+        selectedGenreName: chosenGenre.name,
+      });
+    } catch (err) {
+      console.error(err);
+      setError(err.message || "Could not fetch a movie.");
+    } finally {
+      setSpinning(false);
+    }
+  }, 4000);
+};
 
   const closeModal = () => {
     setMovie(null);
