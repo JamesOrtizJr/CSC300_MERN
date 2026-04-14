@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import Button from "react-bootstrap/Button";
 import Form from "react-bootstrap/Form";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const PRIMARY_COLOR = "#d40a0a";
 const SECONDARY_COLOR = "#0c0c1f";
@@ -166,7 +167,15 @@ const spinWheel = () => {
     setMovie(null);
   };
 
-  const gradient =
+  const navigate = useNavigate();
+  const goToMovieDetails = () => {
+  if (!movie?.id) return;
+  navigate(`/movies/${movie.id}`);
+};
+
+
+
+const gradient =
     selectedGenres.length > 0
       ? selectedGenres
           .map((_, index) => {
@@ -180,6 +189,9 @@ const spinWheel = () => {
 
   return (
     <div style={styles.page}>
+        <Button onClick={() => navigate("/homepage1")} style={styles.homeButton}>
+         ← Back to Home
+         </Button>
       <div style={styles.container}>
         <h1 style={styles.title}>🎲 Movie Roulette</h1>
         <p style={styles.subtitle}>
@@ -278,33 +290,41 @@ const spinWheel = () => {
       {movie && (
         <div style={styles.overlay} onClick={closeModal}>
           <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <h3 style={styles.movieTitle}>{movie.title}</h3>
+            <div style={styles.modalContent}>
+              <h3 style={styles.movieTitle}>{movie.title}</h3>
 
-            <p style={styles.landedText}>
-              Landed on: <strong>{movie.selectedGenreName}</strong>
-            </p>
+              <p style={styles.landedText}>
+                Landed on: <strong>{movie.selectedGenreName}</strong>
+              </p>
 
-            <img
-              src={
-                movie.poster_path
-                  ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
-                  : "https://via.placeholder.com/300x450"
-              }
-              alt={movie.title}
-              style={styles.poster}
-            />
+              <img
+                src={
+                  movie.poster_path
+                    ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
+                    : "https://via.placeholder.com/300x450"
+                }
+                alt={movie.title}
+                style={styles.poster}
+              />
 
-            <p>
-              <strong>Release Date:</strong> {movie.release_date || "N/A"}
-            </p>
-            <p>
-              <strong>Rating:</strong> {movie.vote_average || "N/A"}
-            </p>
-            <p>{movie.overview || "No description available."}</p>
+              <p>
+                <strong>Release Date:</strong> {movie.release_date || "N/A"}
+              </p>
+              <p>
+                <strong>Rating:</strong> {movie.vote_average || "N/A"}
+              </p>
+              <p>{movie.overview || "No description available."}</p>
+            </div>
 
-            <Button onClick={closeModal} style={styles.backButton}>
-              Back to Wheel
-            </Button>
+            <div style={styles.modalButtonRow}>
+              <Button onClick={goToMovieDetails} style={styles.detailsButton}>
+                View Movie Details
+              </Button>
+
+              <Button onClick={closeModal} style={styles.backButton}>
+                Back to Wheel
+              </Button>
+            </div>
           </div>
         </div>
       )}
@@ -320,6 +340,7 @@ const styles = {
     justifyContent: "center",
     alignItems: "center",
     padding: "30px",
+    position: "relative",
   },
   container: {
     width: "100%",
@@ -454,10 +475,14 @@ const styles = {
     maxWidth: "500px",
     width: "90%",
     maxHeight: "85vh",
-    overflowY: "auto",
+    display: "flex",
+    flexDirection: "column",
     textAlign: "center",
     boxShadow: "0 10px 30px rgba(0,0,0,0.35)",
     animation: "scaleIn 0.35s ease",
+  },
+  modalContent: {
+    overflowY: "auto",
   },
   movieTitle: {
     fontWeight: "700",
@@ -472,13 +497,40 @@ const styles = {
     borderRadius: "10px",
     marginBottom: "15px",
   },
+  modalButtonRow: {
+    display: "flex",
+    gap: "10px",
+    marginTop: "auto",
+    paddingTop: "15px",
+    flexWrap: "wrap",
+  },
+  detailsButton: {
+    flex: 1,
+    background: "#0c0c1f",
+    border: "none",
+    borderRadius: "10px",
+    padding: "12px",
+    fontWeight: "600",
+  },
   backButton: {
+    flex: 1,
     background: PRIMARY_COLOR,
     border: "none",
     borderRadius: "10px",
-    padding: "10px 20px",
+    padding: "12px",
     fontWeight: "600",
-    marginTop: "15px",
+  },
+  homeButton: {
+  position: "absolute",
+  top: "20px",
+  left: "20px",
+  background: "#fff",
+  color: "#000",
+  border: "none",
+  borderRadius: "10px",
+  padding: "10px 18px",
+  fontWeight: "600",
+  zIndex: 20,
   },
 };
 
