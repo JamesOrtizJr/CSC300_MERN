@@ -1,21 +1,34 @@
-/* Route Name: User Comments
- * Author: James Ortiz Jr.
- * Date: 02/26/2026 */
+const express = require("express");
+const router = express.Router();
+const Comment = require("../../models/userComment");
+const auth = require('../../../middleware/auth');
 
- const express = require ("express");
- const router = express.Router();
- const Comment = require ("../../models/userComment");
+router.post("/", auth, async (req, res) => {
+  try {
+    const { movieId, text } = req.body;
 
- router.post("/", async (req, res) => {
-    try {
-        const comment = new Comment(req.body);
-        await comment.save();
-        res.status(201).json(comment);
+    if (!movieId || !text || !text.trim()) {
+      return res.status(400).json({
+        message: "movieId and text are required.",
+      });
     }
 
-    catch (err) {
-        res.status(400).json({error: err.message});
-    }
- });
+    const comment = new Comment({
+      userId: req.user._id,
+      movieId,
+      text: text.trim(),
+    });
 
- module.exports = router;
+    await comment.save();
+
+    res.status(201).json(comment);
+  } catch (err) {
+    console.error("Error creating comment:", err);
+    res.status(400).json({
+      message: "Could not create comment.",
+      error: err.message,
+    });
+  }
+});
+
+module.exports = router;

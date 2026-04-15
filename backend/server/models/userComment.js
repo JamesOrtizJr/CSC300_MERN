@@ -1,34 +1,27 @@
-/* Model Name: User Comments
- * Author: James Ortiz Jr.
- * Date: 02/26/2026 */
-
 const mongoose = require("mongoose");
 
-// user schema/model
-const newUserCommentSchema = mongoose.Schema({
-    userId: {
-        type: String,
-        required: true
-    }, 
+const newUserCommentSchema = new mongoose.Schema({
+  userId: {
+    type: String,
+    required: true,
+  },
 
-    postId: {
-        type: String,
-        required: true
-    },
+  movieId: {
+    type: String,
+    required: true,
+    index: true,
+  },
 
-    text: {
-        type: String,
-        required: true
-    },
-    /* This initializes string variables in order
-     * for a comment to be made. */
+  text: {
+    type: String,
+    required: true,
+    trim: true,
+  },
 
-    createdAt: {
-        type: Date,
-        default: Date.now
-    }
-    // {collection: "comments"}
-
-}); // This marks the end of the Schema for new user comments.
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+});
 
 module.exports = mongoose.model("Comment", newUserCommentSchema);

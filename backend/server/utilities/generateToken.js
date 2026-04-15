@@ -9,11 +9,9 @@ const generateAccessToken = (userId, email, username, isAdmin) => {
       isAdmin: isAdmin,
     };
 
-    const token = jwt.sign(
-      payload,
-      process.env.JWT_SECRET || "your_jwt_secret", // use env variable in production
-      { expiresIn: "1h" }
-    );
+    const token = jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, {
+      expiresIn: "1h",
+    });
 
     return token;
   } catch (error) {

@@ -1,11 +1,14 @@
 import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import Button from "react-bootstrap/Button";
+import Form from "react-bootstrap/Form";
 import { useNavigate, useParams } from "react-router-dom";
+import getUserInfo from "../../utilities/decodeJwt";
 
 const PRIMARY_COLOR = "#d40a0a";
 const SECONDARY_COLOR = "#0c0c1f";
 const CARD_COLOR = "#181830";
+const PANEL_COLOR = "#141428";
 const TMDB_API_KEY = "b794dfff76239d4deb38d526dc781cd7";
 
 const MovieDetailsPage = () => {
@@ -16,6 +19,13 @@ const MovieDetailsPage = () => {
   const [trailers, setTrailers] = useState([]);
   const [collectionMovies, setCollectionMovies] = useState([]);
   const [similarMovies, setSimilarMovies] = useState([]);
+
+  const [comments, setComments] = useState([]);
+  const [newComment, setNewComment] = useState("");
+  const [commentLoading, setCommentLoading] = useState(false);
+  const [commentError, setCommentError] = useState("");
+  const [commentsLoading, setCommentsLoading] = useState(true);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [isPosterHovered, setIsPosterHovered] = useState(false);
@@ -24,6 +34,9 @@ const MovieDetailsPage = () => {
 
   const FAVORITES_KEY = "favoriteMovies";
   const WATCHLIST_KEY = "watchlistMovies";
+
+  const token = localStorage.getItem("accessToken");
+  const currentUser = getUserInfo();
 
   const getPosterUrl = (posterPath) =>
     posterPath
@@ -40,20 +53,16 @@ const MovieDetailsPage = () => {
     return dateString.slice(0, 4);
   };
 
-  const formatMovieCardData = (movieObj) => ({
-    id: movieObj.id,
-    title: movieObj.title,
-    poster_path: movieObj.poster_path,
-    release_date: movieObj.release_date,
-    vote_average: movieObj.vote_average,
-  });
-
   const trailer = useMemo(() => {
-    return trailers.find(
-      (video) => video.site === "YouTube" && video.type === "Trailer"
-    ) || trailers.find(
-      (video) => video.site === "YouTube" && video.type === "Teaser"
-    ) || null;
+    return (
+      trailers.find(
+        (video) => video.site === "YouTube" && video.type === "Trailer"
+      ) ||
+      trailers.find(
+        (video) => video.site === "YouTube" && video.type === "Teaser"
+      ) ||
+      null
+    );
   }, [trailers]);
 
   useEffect(() => {
@@ -133,7 +142,35 @@ const MovieDetailsPage = () => {
     }
   }, [id]);
 
-  const toggleStoredMovie = (storageKey, currentStateSetter, currentStateValue) => {
+  useEffect(() => {
+    const fetchComments = async () => {
+      try {
+        setCommentsLoading(true);
+        setCommentError("");
+
+        const res = await axios.get(
+          `http://localhost:8081/api/comments/movie/${id}`
+        );
+
+        setComments(Array.isArray(res.data) ? res.data : []);
+      } catch (err) {
+        console.error("Error fetching comments:", err);
+        setComments([]);
+      } finally {
+        setCommentsLoading(false);
+      }
+    };
+
+    if (id) {
+      fetchComments();
+    }
+  }, [id]);
+
+  const toggleStoredMovie = (
+    storageKey,
+    currentStateSetter,
+    currentStateValue
+  ) => {
     if (!movie) return;
 
     const existing = JSON.parse(localStorage.getItem(storageKey) || "[]");
@@ -168,6 +205,48 @@ const MovieDetailsPage = () => {
 
   const handleToggleWatchlist = () => {
     toggleStoredMovie(WATCHLIST_KEY, setIsWatchlist, isWatchlist);
+  };
+
+  const handleCommentSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!token || !currentUser) {
+      setCommentError("You must be signed in to leave a comment.");
+      return;
+    }
+
+    if (!newComment.trim()) {
+      setCommentError("Comment cannot be empty.");
+      return;
+    }
+
+    try {
+      setCommentLoading(true);
+      setCommentError("");
+
+      const res = await axios.post(
+        "http://localhost:8081/api/comments",
+        {
+          movieId: id,
+          text: newComment.trim(),
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      setComments((prev) => [res.data, ...prev]);
+      setNewComment("");
+    } catch (err) {
+      console.error("Error posting comment:", err);
+      setCommentError(
+        err?.response?.data?.message || "Could not post comment."
+      );
+    } finally {
+      setCommentLoading(false);
+    }
   };
 
   const renderMovieRow = (title, movies) => {
@@ -308,8 +387,9 @@ const MovieDetailsPage = () => {
       >
         <div
           style={{
-            maxWidth: "1150px",
-            margin: "0 auto",
+            maxWidth: "1420px",
+            marginLeft: "40px",
+            marginRight: "auto",
           }}
         >
           <Button
@@ -329,8 +409,8 @@ const MovieDetailsPage = () => {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "320px 1fr",
-              gap: "32px",
+              gridTemplateColumns: "320px 480px 380px",
+              gap: "28px",
               alignItems: "start",
             }}
           >
@@ -443,10 +523,17 @@ const MovieDetailsPage = () => {
               </div>
             </div>
 
-            <div>
+            <div
+              style={{
+                background: "rgba(10, 10, 22, 0.72)",
+                borderRadius: "16px",
+                padding: "24px",
+                boxShadow: "0 8px 20px rgba(0,0,0,0.25)",
+              }}
+            >
               <h1
                 style={{
-                  fontSize: "42px",
+                  fontSize: "38px",
                   fontWeight: "700",
                   marginBottom: "8px",
                 }}
@@ -460,7 +547,7 @@ const MovieDetailsPage = () => {
                     fontStyle: "italic",
                     color: "#ccc",
                     marginBottom: "20px",
-                    fontSize: "18px",
+                    fontSize: "17px",
                   }}
                 >
                   {movie.tagline}
@@ -470,9 +557,9 @@ const MovieDetailsPage = () => {
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "repeat(2, minmax(180px, 1fr))",
-                  gap: "10px 24px",
-                  marginBottom: "24px",
+                  gridTemplateColumns: "1fr",
+                  gap: "8px",
+                  marginBottom: "22px",
                   lineHeight: "1.8",
                 }}
               >
@@ -494,12 +581,12 @@ const MovieDetailsPage = () => {
                 </p>
               </div>
 
-              <div style={{ marginBottom: "20px" }}>
+              <div style={{ marginBottom: "16px" }}>
                 <h4 style={{ marginBottom: "10px" }}>Overview</h4>
                 <p
                   style={{
                     color: "#ddd",
-                    fontSize: "17px",
+                    fontSize: "16px",
                     lineHeight: "1.75",
                     marginBottom: 0,
                   }}
@@ -524,27 +611,158 @@ const MovieDetailsPage = () => {
                 </div>
               )}
             </div>
+
+            <div
+              style={{
+                background: PANEL_COLOR,
+                borderRadius: "16px",
+                padding: "20px",
+                boxShadow: "0 8px 20px rgba(0,0,0,0.25)",
+                minHeight: "500px",
+              }}
+            >
+              <h3 style={{ marginBottom: "16px" }}>Comments</h3>
+
+              {currentUser ? (
+                <Form onSubmit={handleCommentSubmit} style={{ marginBottom: "20px" }}>
+                  <Form.Control
+                    as="textarea"
+                    rows={4}
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    placeholder="Write a comment about this movie..."
+                    style={{
+                      marginBottom: "10px",
+                      borderRadius: "10px",
+                      resize: "none",
+                    }}
+                  />
+
+                  <Button
+                    type="submit"
+                    disabled={commentLoading}
+                    style={{
+                      background: PRIMARY_COLOR,
+                      border: "none",
+                      borderRadius: "10px",
+                      padding: "10px 18px",
+                      fontWeight: "600",
+                    }}
+                  >
+                    {commentLoading ? "Posting..." : "Post Comment"}
+                  </Button>
+
+                  {commentError && (
+                    <p
+                      style={{
+                        color: "#ffb3b3",
+                        marginTop: "10px",
+                        marginBottom: 0,
+                      }}
+                    >
+                      {commentError}
+                    </p>
+                  )}
+                </Form>
+              ) : (
+                <div
+                  style={{
+                    background: "#1d1d35",
+                    borderRadius: "12px",
+                    padding: "14px",
+                    marginBottom: "20px",
+                    color: "#ddd",
+                  }}
+                >
+                  Please sign in to leave a comment.
+                </div>
+              )}
+
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "12px",
+                  maxHeight: "520px",
+                  overflowY: "auto",
+                  paddingRight: "4px",
+                }}
+              >
+                {commentsLoading ? (
+                  <p style={{ color: "#ccc", margin: 0 }}>Loading comments...</p>
+                ) : comments.length > 0 ? (
+                  comments.map((comment) => (
+                    <div
+                      key={comment._id}
+                      style={{
+                        background: "#1d1d35",
+                        borderRadius: "12px",
+                        padding: "14px",
+                      }}
+                    >
+                      <p
+                        style={{
+                          margin: "0 0 6px 0",
+                          fontWeight: "700",
+                          color: "#fff",
+                        }}
+                      >
+                        {comment.username ||
+                          comment.userName ||
+                          comment.userId ||
+                          "User"}
+                      </p>
+
+                      <p
+                        style={{
+                          margin: "0 0 8px 0",
+                          color: "#ddd",
+                          lineHeight: "1.6",
+                          whiteSpace: "pre-wrap",
+                        }}
+                      >
+                        {comment.text}
+                      </p>
+
+                      <p
+                        style={{
+                          margin: 0,
+                          fontSize: "12px",
+                          color: "#999",
+                        }}
+                      >
+                        {comment.createdAt
+                          ? new Date(comment.createdAt).toLocaleString()
+                          : ""}
+                      </p>
+                    </div>
+                  ))
+                ) : (
+                  <p style={{ color: "#ccc", margin: 0 }}>
+                    No comments yet. Be the first to leave one.
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
       <div
         style={{
-          maxWidth: "1150px",
-          margin: "0 auto",
+          maxWidth: "1420px",
+          marginLeft: "40px",
+          marginRight: "auto",
           padding: "30px 20px 50px 20px",
         }}
       >
         {collectionMovies.length > 0 &&
           renderMovieRow(
             `More in the ${movie.belongs_to_collection?.name || "Collection"}`,
-            collectionMovies.map(formatMovieCardData)
+            collectionMovies
           )}
 
-        {renderMovieRow(
-          "Similar Movies",
-          similarMovies.map(formatMovieCardData)
-        )}
+        {renderMovieRow("Similar Movies", similarMovies)}
       </div>
     </div>
   );

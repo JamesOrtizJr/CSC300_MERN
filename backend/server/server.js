@@ -1,79 +1,78 @@
 const express = require("express");
 const app = express();
-const cors = require('cors')
-const movieRoutes = require('./routes/movies');
-const loginRoute = require('./routes/userLogin')
-const getAllUsersRoute = require('./routes/userGetAllUsers')
-const registerRoute = require('./routes/userSignUp')
-const getUserByIdRoute = require('./routes/userGetUserById')
-const dbConnection = require('./config/db.config')
-const editUser = require('./routes/userEditUser')
-const deleteUser = require('./routes/userDeleteAll')
-const postWatchList = require('./routes/postWatchList')
-const getWatchList = require('./routes/getWatchList')
+const cors = require("cors");
+require("dotenv").config();
 
+const movieRoutes = require("./routes/movies");
+const loginRoute = require("./routes/userLogin");
+const getAllUsersRoute = require("./routes/userGetAllUsers");
+const registerRoute = require("./routes/userSignUp");
+const getUserByIdRoute = require("./routes/userGetUserById");
+const dbConnection = require("./config/db.config");
+const editUser = require("./routes/userEditUser");
+const deleteUser = require("./routes/userDeleteAll");
+const postWatchList = require("./routes/postWatchList");
+const getWatchList = require("./routes/getWatchList");
 
+const postFavoritesRoute = require("./routes/postFavorites");
+const getFavoritesRoute = require("./routes/getFavorites");
 
-const postFavoritesRoute = require('./routes/postFavorites')
-const getFavoritesRoute = require('./routes/getFavorites')  
+const makeCommentRoute = require("./routes/userComments/userMakeComment");
+const getAllUserCommentsRoute = require("./routes/userComments/userGetAllUserComments");
 
-const makeCommentRoute = require ('./routes/userComments/userMakeComment');
-const getAllUserCommentsRoute = require('./routes/userComments/userGetAllUserComments'); 
-//REVIEW
-const getReviewsRoute = require('./routes/getReviews');
-const postReviewRoute = require('./routes/postReview');
+// REVIEW
+const getReviewsRoute = require("./routes/getReviews");
+const postReviewRoute = require("./routes/postReview");
 
+// ADMIN
+const adminRoute = require("./routes/adminRoutes/admin");
 
+const SERVER_PORT = process.env.PORT || 8081;
 
+// Database connection
+dbConnection();
 
-//ADMIN
-const adminRoute = require('./routes/adminRoutes/admin');
+// Middleware
+app.use(cors({ origin: "*" }));
+app.use(express.json());
 
-require('dotenv').config();
-const SERVER_PORT = process.env.PORT || 8081
-// butt
-dbConnection()
-app.use(cors({origin: '*'}))
-app.use(express.json())
-app.use('/user', loginRoute)
-app.use('/user', registerRoute)
-app.use('/user', getAllUsersRoute)
-app.use('/user', getUserByIdRoute)
-app.use('/user', editUser)
-app.use('/user', deleteUser)
+// User routes
+app.use("/user", loginRoute);
+app.use("/user", registerRoute);
+app.use("/user", getAllUsersRoute);
+app.use("/user", getUserByIdRoute);
+app.use("/user", editUser);
+app.use("/user", deleteUser);
 
+// Comment routes
+app.use("/api/comments", makeCommentRoute);
+app.use("/api/comments", getAllUserCommentsRoute);
 
-app.use ('/userMakeComment', makeCommentRoute);
-app.use ('/userGetAllUserComments', getAllUserCommentsRoute);
+// Favorites routes
+app.use("/favorites", postFavoritesRoute);
+app.use("/favorites", getFavoritesRoute);
 
-app.use('/favorites', postFavoritesRoute);
-app.use('/favorites', getFavoritesRoute);
+// Review routes
+app.use("/reviews", getReviewsRoute);
+app.use("/reviews", postReviewRoute);
 
-//REVIEW
-app.use('/reviews', getReviewsRoute);
-app.use('/reviews', postReviewRoute);
+// Watchlist routes
+app.use("/watchlist", postWatchList);
+app.use("/watchlist", getWatchList);
 
-app.use('/watchlist', postWatchList);
-app.use('/watchlist', getWatchList);
-app.use('/movies', movieRoutes);
-/*
-app.listen(SERVER_PORT, (req, res) => {
-    console.log(`The backend service is running on port ${SERVER_PORT} and waiting for requests.`);
-}) */
+// Movie routes
+app.use("/movies", movieRoutes);
 
-/* I'm using this code to run a test program.
- * ChatGPT says it stops the server from running twice during tests.
- */
+// Admin routes
+app.use("/admin", adminRoute);
+
+// Start server unless running tests
 if (process.env.NODE_ENV !== "test") {
-    app.listen(SERVER_PORT, () => {
-      console.log(`The backend service is running on port ${SERVER_PORT}`);
-    });
-  }
-  
-  module.exports = app;
+  app.listen(SERVER_PORT, () => {
+    console.log(
+      `The backend service is running on port ${SERVER_PORT}`
+    );
+  });
+}
 
-
-
-
-  //ADMIN
-app.use('/admin', adminRoute);
+module.exports = app;
