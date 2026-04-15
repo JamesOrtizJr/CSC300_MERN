@@ -1,93 +1,281 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 
+const TMDB_API_KEY = "b794dfff76239d4deb38d526dc781cd7";
+const PRIMARY_COLOR = "#d40a0a";
+const SECONDARY_COLOR = "#0c0c1f";
+
 function CastCrewPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [movie, setMovie] = useState(null);
+
+  const [movieTitle, setMovieTitle] = useState("");
+  const [cast, setCast] = useState([]);
+  const [crew, setCrew] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const getProfileUrl = (profilePath) => {
+    return profilePath
+      ? `https://image.tmdb.org/t/p/w300${profilePath}`
+      : "https://via.placeholder.com/200x300?text=No+Image";
+  };
 
   useEffect(() => {
-    fetch(`https://www.omdbapi.com/?i=${id}&apikey=ada999e2`)
-      .then((res) => res.json())
-      .then((data) => setMovie(data))
-      .catch((err) => console.error("Error fetching cast data:", err));
+    const fetchCredits = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        const [movieRes, creditsRes] = await Promise.all([
+          fetch(
+            `https://api.themoviedb.org/3/movie/${id}?api_key=${TMDB_API_KEY}&language=en-US`
+          ).then((res) => res.json()),
+          fetch(
+            `https://api.themoviedb.org/3/movie/${id}/credits?api_key=${TMDB_API_KEY}&language=en-US`
+          ).then((res) => res.json()),
+        ]);
+
+        if (movieRes.success === false || creditsRes.success === false) {
+          setError("Movie not found.");
+          return;
+        }
+
+        setMovieTitle(movieRes.title || "Movie");
+        setCast(creditsRes.cast || []);
+        setCrew(creditsRes.crew || []);
+      } catch (err) {
+        console.error("Error fetching cast data:", err);
+        setError("Could not load cast and crew.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCredits();
   }, [id]);
 
-  if (!movie) return <p className="p-6">Loading...</p>;
-
-  if (movie.Response === "False") {
-    return <p className="p-6">Movie not found.</p>;
+  if (loading) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          background: SECONDARY_COLOR,
+          color: "#fff",
+          padding: "24px",
+        }}
+      >
+        <p>Loading...</p>
+      </div>
+    );
   }
 
-  const actors = movie.Actors ? movie.Actors.split(", ") : [];
-  const directors = movie.Director ? movie.Director.split(", ") : [];
-  const writers = movie.Writer ? movie.Writer.split(", ") : [];
+  if (error) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          background: SECONDARY_COLOR,
+          color: "#fff",
+          padding: "24px",
+        }}
+      >
+        <button
+          onClick={() => navigate(`/movies/${id}`)}
+          style={{
+            marginBottom: "16px",
+            border: "none",
+            borderRadius: "8px",
+            padding: "10px 14px",
+            background: PRIMARY_COLOR,
+            color: "#fff",
+            cursor: "pointer",
+          }}
+        >
+          Back to Movie
+        </button>
+
+        <p>{error}</p>
+      </div>
+    );
+  }
+
+  const directors = crew.filter((person) => person.job === "Director");
+  const writers = crew.filter(
+    (person) =>
+      person.job === "Writer" ||
+      person.job === "Screenplay" ||
+      person.job === "Story"
+  );
 
   return (
-    <div className="p-6">
-  {/* Back Button */}
-  <button
-    onClick={() => navigate(`/movies/${id}`)}
-    className="mb-4 border border-black rounded-md px-3 py-2 bg-white hover:bg-gray-100 text-sm"
-  >
-    Back to Movie
-  </button>
+    <div
+      style={{
+        minHeight: "100vh",
+        background: SECONDARY_COLOR,
+        color: "#fff",
+        padding: "24px",
+      }}
+    >
+      <button
+        onClick={() => navigate(`/movies/${id}`)}
+        style={{
+          marginBottom: "16px",
+          border: "none",
+          borderRadius: "8px",
+          padding: "10px 14px",
+          background: PRIMARY_COLOR,
+          color: "#fff",
+          cursor: "pointer",
+        }}
+      >
+        Back to Movie
+      </button>
 
-  {/* Title */}
-  <h1 className="text-5xl font-bold mb-4">
-    {movie.Title} Cast & Crew
-  </h1>
+      <h1 style={{ fontSize: "42px", fontWeight: "700", marginBottom: "24px" }}>
+        {movieTitle} Cast & Crew
+      </h1>
 
-  {/* Three sections side-by-side */}
-  <div className="flex gap-4">
-    
-    {/* ACTORS */}
-    <div className="flex-1 border border-black rounded-md p-4 bg-white">
-      <h2 className="text-2xl font-semibold mb-2">Actors</h2>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr",
+          gap: "32px",
+        }}
+      >
+        <div>
+          <h2 style={{ fontSize: "28px", marginBottom: "16px" }}>Actors</h2>
 
-      {actors.length > 0 ? (
-        <ul className="list-disc pl-5 text-lg leading-relaxed">
-          {actors.map((person, index) => (
-            <li key={index}>{person}</li>
-          ))}
-        </ul>
-      ) : (
-        <p className="text-sm">No actor information available.</p>
-      )}
+          {cast.length > 0 ? (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
+                gap: "20px",
+              }}
+            >
+              {cast.map((person) => (
+                <div
+                  key={person.credit_id}
+                  style={{
+                    background: "#181830",
+                    borderRadius: "14px",
+                    padding: "15px",
+                    textAlign: "center",
+                  }}
+                >
+                  <img
+                    src={getProfileUrl(person.profile_path)}
+                    alt={person.name}
+                    style={{
+                      width: "100%",
+                      height: "240px",
+                      objectFit: "cover",
+                      borderRadius: "10px",
+                      marginBottom: "10px",
+                    }}
+                  />
+                  <p style={{ margin: 0, fontWeight: "700" }}>{person.name}</p>
+                  <p style={{ margin: 0, color: "#bbb", fontSize: "14px" }}>
+                    {person.character}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p>No actor information available.</p>
+          )}
+        </div>
+
+        <div>
+          <h2 style={{ fontSize: "28px", marginBottom: "16px" }}>Directors</h2>
+
+          {directors.length > 0 ? (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
+                gap: "20px",
+              }}
+            >
+              {directors.map((person) => (
+                <div
+                  key={person.credit_id}
+                  style={{
+                    background: "#181830",
+                    borderRadius: "14px",
+                    padding: "15px",
+                    textAlign: "center",
+                  }}
+                >
+                  <img
+                    src={getProfileUrl(person.profile_path)}
+                    alt={person.name}
+                    style={{
+                      width: "100%",
+                      height: "240px",
+                      objectFit: "cover",
+                      borderRadius: "10px",
+                      marginBottom: "10px",
+                    }}
+                  />
+                  <p style={{ margin: 0, fontWeight: "700" }}>{person.name}</p>
+                  <p style={{ margin: 0, color: "#bbb", fontSize: "14px" }}>
+                    {person.job}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p>No director information available.</p>
+          )}
+        </div>
+
+        <div>
+          <h2 style={{ fontSize: "28px", marginBottom: "16px" }}>Writers</h2>
+
+          {writers.length > 0 ? (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
+                gap: "20px",
+              }}
+            >
+              {writers.map((person) => (
+                <div
+                  key={person.credit_id}
+                  style={{
+                    background: "#181830",
+                    borderRadius: "14px",
+                    padding: "15px",
+                    textAlign: "center",
+                  }}
+                >
+                  <img
+                    src={getProfileUrl(person.profile_path)}
+                    alt={person.name}
+                    style={{
+                      width: "100%",
+                      height: "240px",
+                      objectFit: "cover",
+                      borderRadius: "10px",
+                      marginBottom: "10px",
+                    }}
+                  />
+                  <p style={{ margin: 0, fontWeight: "700" }}>{person.name}</p>
+                  <p style={{ margin: 0, color: "#bbb", fontSize: "14px" }}>
+                    {person.job}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p>No writer information available.</p>
+          )}
+        </div>
+      </div>
     </div>
-
-    {/* DIRECTOR */}
-    <div className="flex-1 border border-black rounded-md p-4 bg-white">
-      <h2 className="text-2xl font-semibold mb-2">Director</h2>
-
-      {directors.length > 0 ? (
-        <ul className="list-disc pl-5 text-lg leading-relaxed">
-          {directors.map((person, index) => (
-            <li key={index}>{person}</li>
-          ))}
-        </ul>
-      ) : (
-        <p className="text-sm">No director information available.</p>
-      )}
-    </div>
-
-    {/* WRITERS */}
-    <div className="flex-1 border border-black rounded-md p-4 bg-white">
-      <h2 className="text-2xl font-semibold mb-2">Writers</h2>
-
-      {writers.length > 0 ? (
-        <ul className="list-disc pl-5 text-lg leading-relaxed">
-          {writers.map((person, index) => (
-            <li key={index}>{person}</li>
-          ))}
-        </ul>
-      ) : (
-        <p className="text-sm">No writer information available.</p>
-      )}
-    </div>
-
-  </div>
-</div>
   );
 }
 

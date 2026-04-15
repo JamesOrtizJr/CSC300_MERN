@@ -54,9 +54,9 @@ useEffect(() => {
           <Route path="/privateUserProfile" element={<PrivateUserProfile />} />
 
 
-
           <Route path="/movies/:id" element={<MovieDetailsPage />} />
-          <Route path="/movies/:id/cast" element={<CastCrewPage />} />
+          <Route path="/movies/:id/cast-crew" element={<CastCrewPage />} />
+          
           <Route
             path="/admin"
             element={user && user.isAdmin ? <AdminPage /> : <AccessDenied />}
