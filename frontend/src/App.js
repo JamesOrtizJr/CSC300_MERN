@@ -18,7 +18,7 @@ import CastCrewPage from "./components/pages/castAndCrewPage";
 
 import AccessDenied from "./components/pages/AccessDenied";
 
-
+import CompareMovies from "./components/pages/CompareMovies";
 
 
 
@@ -56,7 +56,7 @@ useEffect(() => {
 
           <Route path="/movies/:id" element={<MovieDetailsPage />} />
           <Route path="/movies/:id/cast-crew" element={<CastCrewPage />} />
-          
+           <Route path="/compare/:id" element={<CompareMovies />} />
           <Route
             path="/admin"
             element={user && user.isAdmin ? <AdminPage /> : <AccessDenied />}
@@ -73,6 +73,3 @@ useEffect(() => {
 
 
 export default App
-
-
-//TEST FOR DATA PUSH

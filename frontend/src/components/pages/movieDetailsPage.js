@@ -520,6 +520,18 @@ const MovieDetailsPage = () => {
                 >
                   {isFavorite ? "♥ Favorited" : "♡ Add to Favorites"}
                 </Button>
+
+                <Button
+  onClick={() => navigate(`/compare/${movie.id}`, {
+    state: {
+      movie: movie,
+      similarMovies: similarMovies
+    }
+  })
+}
+>
+  ⚖️ Compare Movie
+</Button>
               </div>
             </div>
 

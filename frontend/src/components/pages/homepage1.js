@@ -165,7 +165,7 @@ const HomePage1 = () => {
         </h2>
 
         <Button
-          onClick={() => navigate("/profile")}
+          onClick={() => navigate("/privateUserProfile")}
           style={{
             borderRadius: "50%",
             width: "45px",
