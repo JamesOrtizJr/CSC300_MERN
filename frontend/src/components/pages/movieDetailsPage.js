@@ -530,7 +530,7 @@ const MovieDetailsPage = () => {
   })
 }
 >
-  ⚖️ Compare Movie
+  ⚖️ Compare
 </Button>
               </div>
             </div>
