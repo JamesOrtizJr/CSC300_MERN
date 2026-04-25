@@ -86,6 +86,10 @@ const MovieRoulette = () => {
       include_adult: false,
       include_video: false,
       with_genres: genreId,
+
+      //removes unrated/ barely rated movies to improve quality of results
+      "vote_count.gte": 50,
+      "vote_average.gte": 5,
     };
 
     if (dateRange) {
@@ -107,9 +111,12 @@ const MovieRoulette = () => {
     );
 
     const results = (pageRes.data.results || []).filter(
-      (movie) => movie.poster_path && movie.overview
+    (movie) =>
+      movie.poster_path &&
+      movie.overview &&
+      movie.vote_count >= 50 &&
+      movie.vote_average > 0
     );
-
     if (results.length === 0) {
       throw new Error("No movies found for that genre and decade.");
     }
