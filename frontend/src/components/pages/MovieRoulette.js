@@ -85,7 +85,7 @@ const MovieRoulette = () => {
       sort_by: "popularity.desc",
       include_adult: false,
       include_video: false,
-      with_genres: genreId,
+      with_genres: genreId.join(","),
 
       //removes unrated/ barely rated movies to improve quality of results
       "vote_count.gte": 50,
@@ -117,9 +117,31 @@ const MovieRoulette = () => {
       movie.vote_count >= 50 &&
       movie.vote_average > 0
     );
-    if (results.length === 0) {
-      throw new Error("No movies found for that genre and decade.");
-    }
+if (results.length === 0) {
+  const fallbackParams = {
+    ...baseParams,
+    with_genres: genreId.join("|"),
+  };
+
+  const fallbackRes = await axios.get(
+    "https://api.themoviedb.org/3/discover/movie",
+    { params: { ...fallbackParams, page: 1 } }
+  );
+
+  const fallbackResults = (fallbackRes.data.results || []).filter(
+    (movie) =>
+      movie.poster_path &&
+      movie.overview &&
+      movie.vote_count >= 50 &&
+      movie.vote_average > 0
+  );
+
+  if (fallbackResults.length === 0) {
+    throw new Error("No movies found. Try fewer genres.");
+  }
+
+  return fallbackResults[Math.floor(Math.random() * fallbackResults.length)];
+}
 
     return results[Math.floor(Math.random() * results.length)];
   };
@@ -150,7 +172,9 @@ const spinWheel = () => {
 
   setTimeout(async () => {
     try {
-      const randomMovie = await getRandomMovieByGenre(chosenGenre.id, decade);
+        const genreId = selectedGenres.map((g) => g.id);
+
+        const randomMovie = await getRandomMovieByGenre(genreId, decade);
 
       if (winSoundRef.current) {
         winSoundRef.current.currentTime = 0;
@@ -159,7 +183,7 @@ const spinWheel = () => {
 
       setMovie({
         ...randomMovie,
-        selectedGenreName: chosenGenre.name,
+        selectedGenreName: selectedGenres.map((g) => g.name).join(" + "),
       });
     } catch (err) {
       console.error(err);
