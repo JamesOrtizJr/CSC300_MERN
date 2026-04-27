@@ -1,21 +1,21 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { useParams, useLocation, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 
 const API_KEY = "b794dfff76239d4deb38d526dc781cd7";
 const IMG = "https://image.tmdb.org/t/p/w300";
 
 const CompareMovies = () => {
   const { id } = useParams();
-  const location = useLocation();
   const navigate = useNavigate();
 
   const [movie1, setMovie1] = useState(null);
   const [movie2, setMovie2] = useState(null);
   const [suggested, setSuggested] = useState([]);
+  const [selectedId, setSelectedId] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // 🔥 Fetch full movie data (details + credits)
+  // 🎬 fetch movie
   const getFullMovieData = async (movieId) => {
     const movieRes = await axios.get(
       `https://api.themoviedb.org/3/movie/${movieId}`,
@@ -34,88 +34,77 @@ const CompareMovies = () => {
     };
   };
 
-  // 🎬 Load first movie
   useEffect(() => {
     const loadMovie = async () => {
-      try {
-        setLoading(true);
+      setLoading(true);
 
-        const data = await getFullMovieData(id);
-        setMovie1(data);
+      const data = await getFullMovieData(id);
+      setMovie1(data);
 
-        const sim = await axios.get(
-          `https://api.themoviedb.org/3/movie/${id}/similar`,
-          { params: { api_key: API_KEY } }
-        );
-        setSuggested(sim.data.results.slice(0, 10));
+      const sim = await axios.get(
+        `https://api.themoviedb.org/3/movie/${id}/similar`,
+        { params: { api_key: API_KEY } }
+      );
+      setSuggested(sim.data.results.slice(0, 12));
 
-      } catch (err) {
-        console.error("Error loading movie:", err);
-      } finally {
-        setLoading(false);
-      }
+      setLoading(false);
     };
 
     if (id) loadMovie();
   }, [id]);
 
-  // 🎯 Select second movie
+  // 🎯 select second movie
   const selectMovie = async (movieId) => {
+    setSelectedId(movieId);
+
     const data = await getFullMovieData(movieId);
     setMovie2(data);
+
+    const sim = await axios.get(
+      `https://api.themoviedb.org/3/movie/${movieId}/similar`,
+      { params: { api_key: API_KEY } }
+    );
+    setSuggested(sim.data.results.slice(0, 12));
   };
 
-  // 🏆 Winner logic
-  const winner =
-    movie1 && movie2
-      ? movie1.vote_average === movie2.vote_average
-        ? "tie"
-        : movie1.vote_average > movie2.vote_average
-        ? "movie1"
-        : "movie2"
-      : null;
-
-  // 🎬 Extract crew helpers
   const getDirector = (crew) =>
     crew?.find((c) => c.job === "Director")?.name || "N/A";
 
   const getWriter = (crew) =>
     crew?.find((c) => c.job === "Writer" || c.job === "Screenplay")?.name || "N/A";
 
-  // 🎬 Movie card component
-  const MovieCard = ({ movie, isWinner }) => (
+  // 🎬 CARD WITH GLOW
+  const MovieCard = ({ movie }) => (
     <div style={{
-      width: "320px",
-      background: "#12122b",
-      borderRadius: "16px",
-      padding: "15px",
-      border: isWinner ? "2px solid gold" : "1px solid #333",
-      boxShadow: "0 8px 20px rgba(0,0,0,0.5)"
+      width: "450px",
+      borderRadius: "20px",
+      padding: "25px",
+      background: "linear-gradient(145deg, #14143a, #0c0c1f)",
+      border: "1px solid rgba(255,255,255,0.1)",
+      boxShadow: "0 0 25px rgba(0,0,0,0.7)",
+      transition: "all 0.3s ease"
     }}>
       <img
         src={IMG + movie.poster_path}
-        style={{ width: "100%", borderRadius: "12px" }}
+        style={{
+          width: "100%",
+          borderRadius: "14px",
+          transition: "transform 0.3s"
+        }}
         alt=""
       />
 
-      <h3 style={{ marginTop: "10px" }}>{movie.title}</h3>
+      <h3 style={{ marginTop: "12px" }}>{movie.title}</h3>
 
-      <p>⭐ {movie.vote_average}</p>
       <p>📅 {movie.release_date?.split("-")[0]}</p>
       <p>⏱ {movie.runtime} min</p>
+      <p>🎭 {movie.genres?.map((g) => g.name).join(", ")}</p>
+      <p>🎬 {getDirector(movie.crew)}</p>
+      <p>✍️ {getWriter(movie.crew)}</p>
 
-      <p>
-        🎭 {movie.genres?.map((g) => g.name).join(", ")}
-      </p>
+      <p style={{ fontSize: "14px" }}>{movie.overview}</p>
 
-      <p>🎬 Director: {getDirector(movie.crew)}</p>
-      <p>✍️ Writer: {getWriter(movie.crew)}</p>
-
-      <p style={{ fontSize: "13px", marginTop: "8px" }}>
-        {movie.overview}
-      </p>
-
-      <p style={{ marginTop: "10px", fontSize: "13px" }}>
+      <p style={{ fontSize: "14px", marginTop: "8px" }}>
         👥 {movie.cast?.map((a) => a.name).join(", ")}
       </p>
     </div>
@@ -124,111 +113,116 @@ const CompareMovies = () => {
   return (
     <div style={{
       minHeight: "100vh",
-      background: "#0c0c1f",
+      background: "radial-gradient(circle at top, #1a1a40, #0c0c1f)",
       color: "#fff",
-      padding: "20px",
-      maxWidth: "1200px",
-      margin: "auto"
+      padding: "25px"
     }}>
 
-      {/* 🔙 Back */}
+      {/* BACK */}
       <button
         onClick={() => navigate(-1)}
         style={{
-          marginBottom: "20px",
-          background: "#d40a0a",
+          background: "#ff2e63",
           border: "none",
-          padding: "10px 16px",
-          borderRadius: "8px",
+          padding: "10px 18px",
+          borderRadius: "10px",
           color: "#fff",
-          fontWeight: "600",
-          cursor: "pointer"
+          cursor: "pointer",
+          boxShadow: "0 0 10px rgba(255,0,80,0.6)"
         }}
       >
         ← Back
       </button>
 
-      <h2 style={{ textAlign: "center" }}>⚖️ Movie Battle</h2>
+      <h2 style={{
+        textAlign: "center",
+        fontSize: "32px",
+        marginTop: "10px",
+        textShadow: "0 0 10px rgba(255,255,255,0.3)"
+      }}>
+        🎬 Movie Comparison
+      </h2>
 
       {loading && <p style={{ textAlign: "center" }}>Loading...</p>}
 
-      {/* 🎬 COMPARISON */}
-      {movie1 && (
-        <div style={{
-          display: "flex",
-          justifyContent: "center",
-          gap: "30px",
-          flexWrap: "wrap",
-          marginTop: "30px"
-        }}>
-          <MovieCard movie={movie1} isWinner={winner === "movie1"} />
+      {/* 🎬 MOVIES */}
+      <div style={{
+        display: "flex",
+        justifyContent: "center",
+        gap: "60px",
+        flexWrap: "wrap",
+        marginTop: "50px"
+      }}>
+        {movie1 && <MovieCard movie={movie1} />}
 
-          <h2 style={{ alignSelf: "center" }}>VS</h2>
+        {movie2 ? (
+          <MovieCard movie={movie2} />
+        ) : (
+          <div style={{
+            width: "450px",
+            height: "500px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            border: "2px dashed #666",
+            borderRadius: "20px",
+            opacity: 0.6
+          }}>
+            Pick a movie 👇
+          </div>
+        )}
+      </div>
 
-          {movie2 ? (
-            <MovieCard movie={movie2} isWinner={winner === "movie2"} />
-          ) : (
-            <div style={{
-              width: "320px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              border: "2px dashed #555",
-              borderRadius: "16px"
-            }}>
-              Pick a movie 👇
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* 🏆 Winner */}
-      {winner && (
-        <h3 style={{
-          textAlign: "center",
-          marginTop: "20px",
-          color: "gold"
-        }}>
-          {winner === "tie"
-            ? "🤝 It's a Tie!"
-            : `🏆 Winner: ${winner === "movie1" ? movie1.title : movie2.title}`}
-        </h3>
-      )}
-
-      {/* 🔥 Suggested Movies */}
+      {/* 🔥 SUGGESTIONS */}
       {suggested.length > 0 && (
-        <div style={{ marginTop: "50px" }}>
-          <h4 style={{ textAlign: "center" }}>Pick a Similar Movie</h4>
+        <div style={{ marginTop: "70px" }}>
+
+          <h3 style={{
+            textAlign: "center",
+            fontSize: "24px",
+            marginBottom: "15px",
+            textShadow: "0 0 8px rgba(255,255,255,0.2)"
+          }}>
+            Choose a Movie
+          </h3>
 
           <div style={{
             display: "flex",
             overflowX: "auto",
-            gap: "12px",
-            marginTop: "15px",
-            paddingBottom: "10px"
+            gap: "20px",
+            padding: "15px"
           }}>
             {suggested.map((m) => (
               <div
                 key={m.id}
                 onClick={() => selectMovie(m.id)}
                 style={{
+                  minWidth: "180px",
                   cursor: "pointer",
-                  minWidth: "120px"
+                  transform: selectedId === m.id ? "scale(1.1)" : "scale(1)",
+                  transition: "all 0.3s",
+                  boxShadow: selectedId === m.id
+                    ? "0 0 20px rgba(0,200,255,0.8)"
+                    : "0 0 10px rgba(0,0,0,0.5)",
+                  borderRadius: "10px"
                 }}
               >
                 <img
                   src={IMG + m.poster_path}
                   style={{
                     width: "100%",
-                    height: "180px",
+                    height: "260px",
                     objectFit: "cover",
-                    borderRadius: "8px"
+                    borderRadius: "10px"
                   }}
                 />
-                <p style={{ fontSize: "12px" }}>{m.title}</p>
+                <p style={{ fontSize: "14px", textAlign: "center" }}>
+                  {m.title}
+                </p>
               </div>
             ))}
           </div>
+
         </div>
       )}
     </div>
