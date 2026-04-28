@@ -21,6 +21,14 @@ function CastCrewPage() {
       : "https://via.placeholder.com/200x300?text=No+Image";
   };
 
+  const goToActorDetails = (personId) => {
+    navigate(`/actors/${personId}`, {
+      state: {
+        from: `/movies/${id}/cast-crew`,
+      },
+    });
+  };
+
   useEffect(() => {
     const fetchCredits = async () => {
       try {
@@ -157,11 +165,13 @@ function CastCrewPage() {
               {cast.map((person) => (
                 <div
                   key={person.credit_id}
+                  onClick={() => goToActorDetails(person.id)}
                   style={{
                     background: "#181830",
                     borderRadius: "14px",
                     padding: "15px",
                     textAlign: "center",
+                    cursor: "pointer",
                   }}
                 >
                   <img

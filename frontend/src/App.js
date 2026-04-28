@@ -15,37 +15,32 @@ import { createContext, useState, useEffect } from "react";
 import getUserInfo from "./utilities/decodeJwt";
 import MovieDetailsPage from "./components/pages/movieDetailsPage";
 import CastCrewPage from "./components/pages/castAndCrewPage";
+import ActorDetailsPage from "./components/pages/ActorDetailsPage";
 
 import AccessDenied from "./components/pages/AccessDenied";
 
 import CompareMovies from "./components/pages/CompareMovies";
-
-
-
 
 // ADMIN
 import AdminPage from "./components/pages/AdminPage";
 // Roulette
 import MovieRoulette from "./components/pages/MovieRoulette";
 
-
 export const UserContext = createContext();
-//test change
-//test again
+
 const App = () => {
   const [user, setUser] = useState(null);
 
-useEffect(() => {
-  const info = getUserInfo();
-  console.log("decoded user:", info);
-  setUser(info);
-}, []);
+  useEffect(() => {
+    const info = getUserInfo();
+    console.log("decoded user:", info);
+    setUser(info);
+  }, []);
 
   return (
     <>
-    
       <Navbar />
-      <UserContext.Provider value={{user, setUser}}>
+      <UserContext.Provider value={{ user, setUser }}>
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/homepage1" element={<HomePage1 />} />
@@ -53,23 +48,22 @@ useEffect(() => {
           <Route path="/signup" element={<Signup />} />
           <Route path="/privateUserProfile" element={<PrivateUserProfile />} />
 
-
           <Route path="/movies/:id" element={<MovieDetailsPage />} />
           <Route path="/movies/:id/cast-crew" element={<CastCrewPage />} />
-           <Route path="/compare/:id" element={<CompareMovies />} />
+          <Route path="/actors/:actorId" element={<ActorDetailsPage />} />
+
+          <Route path="/compare/:id" element={<CompareMovies />} />
+
           <Route
             path="/admin"
             element={user && user.isAdmin ? <AdminPage /> : <AccessDenied />}
           />
-          <Route path="/movieRoulette" element={<MovieRoulette />} />          
-          
-          
+
+          <Route path="/movieRoulette" element={<MovieRoulette />} />
         </Routes>
       </UserContext.Provider>
     </>
   );
 };
 
-
-
-export default App
+export default App;
