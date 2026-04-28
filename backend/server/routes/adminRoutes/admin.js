@@ -1,8 +1,10 @@
 const express = require("express");
 const router = express.Router();
 const User = require("../../models/userModel");
+
 // BAN USER
 router.put("/ban/:userId", async (req, res) => {
+      console.log("BAN ROUTE HIT:", req.params.userId);  // ← add this
     try {
         const updatedUser = await User.findByIdAndUpdate(
             req.params.userId,

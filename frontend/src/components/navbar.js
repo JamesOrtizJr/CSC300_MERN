@@ -19,7 +19,9 @@ export default function Navbar() {
       <Nav className="me-auto">
          <Nav.Link href="/homepage1">Home Page</Nav.Link>
           <Nav.Link href="/login">Login</Nav.Link>
-            <Nav.Link href="/admin">Admin</Nav.Link>
+                   {user?.isAdmin && (
+                <Nav.Link href="/admin">Admin</Nav.Link>
+                                    )}
                
        
         <Nav.Link href="/privateUserProfile">Profile</Nav.Link>

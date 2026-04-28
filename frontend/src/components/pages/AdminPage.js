@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+const TMDB_API_KEY = "b794dfff76239d4deb38d526dc781cd7";
 
 function AdminPage() {
   const [stats, setStats] = useState({
@@ -15,6 +16,10 @@ function AdminPage() {
   const [selectedUserId, setSelectedUserId] = useState("");
   const [selectedUsername, setSelectedUsername] = useState("");
   const [selectedUserIsAdmin, setSelectedUserIsAdmin] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const usersPerPage = 10;
+  const [selectedUserComments, setSelectedUserComments] = useState([]);
+  const [loadingComments, setLoadingComments] = useState(false);
 
   useEffect(() => {
     getStats();
@@ -40,6 +45,7 @@ function AdminPage() {
   };
 
   const banUser = async (id) => {
+      console.log("CLICKED BAN:", id);   // ← add this
     try {
       await axios.put(`http://localhost:8081/admin/ban/${id}`);
       getStats();
@@ -127,13 +133,14 @@ function AdminPage() {
     }
   };
 
-  const handleSearch = () => {
-    const results = users.filter((user) =>
-      user.username.toLowerCase().includes(search.toLowerCase())
-    );
-    setFilteredUsers(results);
-    setShowBannedOnly(false);
-  };
+const handleSearch = () => {
+  const results = users.filter((user) =>
+    user.username.toLowerCase().includes(search.toLowerCase())
+  );
+  setFilteredUsers(results);
+  setShowBannedOnly(false);
+  setCurrentPage(1);
+};
 
   const handleKeyDown = (e) => {
     if (e.key === "Enter") {
@@ -141,35 +148,83 @@ function AdminPage() {
     }
   };
 
-  const handleReset = () => {
-    setSearch("");
-    setFilteredUsers([]);
-    setShowBannedOnly(false);
-    setSelectedUserId("");
-    setSelectedUsername("");
-    setSelectedUserIsAdmin(false);
-  };
+const handleReset = () => {
+  setSearch("");
+  setFilteredUsers([]);
+  setShowBannedOnly(false);
+  setSelectedUserId("");
+  setSelectedUsername("");
+  setSelectedUserIsAdmin(false);
+  setCurrentPage(1);
+};
 
   const handleShowBannedUsers = () => {
     const bannedList = users.filter((user) => user.isBanned);
     setFilteredUsers(bannedList);
     setShowBannedOnly(true);
+    setCurrentPage(1);
   };
 
   const handleShowAllUsers = () => {
     setFilteredUsers([]);
     setSearch("");
     setShowBannedOnly(false);
+    setCurrentPage(1);
   };
 
-  const handleSelectUser = (user) => {
-    setSelectedUserId(user._id);
-    setSelectedUsername(user.username);
-    setSelectedUserIsAdmin(user.isAdmin);
-  };
+ const handleSelectUser = async (user) => {
+  setSelectedUserId(user._id);
+  setSelectedUsername(user.username);
+  setSelectedUserIsAdmin(user.isAdmin);
+  setLoadingComments(true);
 
-  const displayedUsers =
-    filteredUsers.length > 0 || showBannedOnly ? filteredUsers : users;
+  try {
+    const response = await axios.get(
+      `http://localhost:8081/api/comments/user/${user._id}`
+    );
+
+    const commentsWithMovies = await Promise.all(
+      response.data.map(async (comment) => {
+        try {
+          const movieRes = await axios.get(
+            `https://api.themoviedb.org/3/movie/${comment.movieId}`,
+            {
+              params: {
+                api_key: TMDB_API_KEY,
+                language: "en-US",
+              },
+            }
+          );
+
+          return {
+            ...comment,
+            movieTitle: movieRes.data.title,
+          };
+        } catch {
+          return {
+            ...comment,
+            movieTitle: "Unknown Movie",
+          };
+        }
+      })
+    );
+
+    setSelectedUserComments(commentsWithMovies);
+  } catch (error) {
+    console.log("Error getting user comments", error);
+    setSelectedUserComments([]);
+  } finally {
+    setLoadingComments(false);
+  }
+};
+
+const sortedUsers = [...(filteredUsers.length > 0 || showBannedOnly ? filteredUsers : users)]
+  .sort((a, b) => a.username.localeCompare(b.username));
+
+const totalPages = Math.ceil(sortedUsers.length / usersPerPage);
+
+const startIndex = (currentPage - 1) * usersPerPage;
+const displayedUsers = sortedUsers.slice(startIndex, startIndex + usersPerPage);
 
   return (
     <div style={styles.page}>
@@ -239,7 +294,7 @@ function AdminPage() {
             <tr>
               <th style={styles.th}>Username</th>
               <th style={styles.th}>Email</th>
-              <th style={styles.th}>Admin</th>
+              <th style={styles.th}>Role</th>
               <th style={styles.th}>Banned</th>
               <th style={styles.th}>Action</th>
             </tr>
@@ -311,6 +366,29 @@ function AdminPage() {
             )}
           </tbody>
         </table>
+        {totalPages > 1 && (
+  <div style={styles.pagination}>
+    <button
+      onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+      disabled={currentPage === 1}
+      style={styles.pageButton}
+    >
+      Prev
+    </button>
+
+    <span style={styles.pageText}>
+      Page {currentPage} of {totalPages}
+    </span>
+
+    <button
+      onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+      disabled={currentPage === totalPages}
+      style={styles.pageButton}
+    >
+      Next
+    </button>
+  </div>
+)}
       </div>
 
       <div style={styles.adminControlsSection}>
@@ -343,6 +421,24 @@ function AdminPage() {
                 </button>
               )}
             </div>
+            <div style={styles.commentsSection}>
+              <h3>User Comments</h3>
+
+              {loadingComments ? (
+              <p>Loading comments...</p>
+             ) : selectedUserComments.length > 0 ? (
+             selectedUserComments.map((comment) => (
+              <div key={comment._id} style={styles.commentCard}>
+               <p>{comment.text}</p>
+                         <small>
+                  Movie: <strong>{comment.movieTitle}</strong>
+                    </small>
+                         </div>
+                        ))
+                     ) : (
+                     <p>No comments found for this user.</p>
+                )}
+              </div>
           </div>
         )}
       </div>
@@ -588,7 +684,40 @@ const styles = {
     display: "flex",
     gap: "12px",
     flexWrap: "wrap"
-  }
+  },
+
+  pagination: {
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
+  gap: "15px",
+  marginTop: "20px"
+},
+pageButton: {
+  backgroundColor: "#1f2937",
+  color: "white",
+  border: "none",
+  padding: "8px 14px",
+  borderRadius: "8px",
+  cursor: "pointer",
+  fontWeight: "bold"
+},
+pageText: {
+  color: "white",
+  fontWeight: "bold"
+},
+commentsSection: {
+  marginTop: "20px",
+  borderTop: "1px solid #e5e7eb",
+  paddingTop: "15px"
+},
+commentCard: {
+  backgroundColor: "#f3f4f6",
+  borderRadius: "10px",
+  padding: "12px",
+  marginBottom: "10px",
+  textAlign: "left"
+},
 };
 
 export default AdminPage;
