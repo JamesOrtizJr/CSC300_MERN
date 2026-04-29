@@ -22,6 +22,10 @@ const MovieDetailsPage = () => {
 
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState("");
+  const [replyText, setReplyText] = useState({});
+  const [editingCommentId, setEditingCommentId] = useState(null);
+  const [editText, setEditText] = useState("");
+
   const [commentLoading, setCommentLoading] = useState(false);
   const [commentError, setCommentError] = useState("");
   const [commentsLoading, setCommentsLoading] = useState(true);
@@ -38,19 +42,45 @@ const MovieDetailsPage = () => {
   const token = localStorage.getItem("accessToken");
   const currentUser = getUserInfo();
 
+  const currentUserId =
+    currentUser?._id ||
+    currentUser?.id ||
+    currentUser?.userId ||
+    currentUser?.userID;
+
   const getPosterUrl = (posterPath) =>
     posterPath
       ? `https://image.tmdb.org/t/p/w500${posterPath}`
       : "https://via.placeholder.com/300x450?text=No+Poster";
 
   const getBackdropUrl = (backdropPath) =>
-    backdropPath
-      ? `https://image.tmdb.org/t/p/original${backdropPath}`
-      : "";
+    backdropPath ? `https://image.tmdb.org/t/p/original${backdropPath}` : "";
 
   const getYear = (dateString) => {
     if (!dateString) return "N/A";
     return dateString.slice(0, 4);
+  };
+
+  const formatTime = (timestamp) => {
+    if (!timestamp) return "";
+    return new Date(timestamp).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const getCommentUserId = (comment) => {
+    if (!comment?.userID) return "";
+    if (typeof comment.userID === "object") return comment.userID._id;
+    return comment.userID;
+  };
+
+  const getUsername = (item) => {
+    return item?.userID?.username || item?.username || item?.userName || "User";
+  };
+
+  const isOwnComment = (comment) => {
+    return String(getCommentUserId(comment)) === String(currentUserId);
   };
 
   const trailer = useMemo(() => {
@@ -142,25 +172,25 @@ const MovieDetailsPage = () => {
     }
   }, [id]);
 
+  const fetchComments = async () => {
+    try {
+      setCommentsLoading(true);
+      setCommentError("");
+
+      const res = await axios.get(
+        `http://localhost:8081/api/comments/movie/${id}`
+      );
+
+      setComments(Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      console.error("Error fetching comments:", err);
+      setComments([]);
+    } finally {
+      setCommentsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchComments = async () => {
-      try {
-        setCommentsLoading(true);
-        setCommentError("");
-
-        const res = await axios.get(
-          `http://localhost:8081/api/comments/movie/${id}`
-        );
-
-        setComments(Array.isArray(res.data) ? res.data : []);
-      } catch (err) {
-        console.error("Error fetching comments:", err);
-        setComments([]);
-      } finally {
-        setCommentsLoading(false);
-      }
-    };
-
     if (id) {
       fetchComments();
     }
@@ -174,6 +204,7 @@ const MovieDetailsPage = () => {
     if (!movie) return;
 
     const existing = JSON.parse(localStorage.getItem(storageKey) || "[]");
+
     const movieToStore = {
       id: movie.id,
       title: movie.title,
@@ -210,7 +241,7 @@ const MovieDetailsPage = () => {
   const handleCommentSubmit = async (e) => {
     e.preventDefault();
 
-    if (!token || !currentUser) {
+    if (!token || !currentUserId) {
       setCommentError("You must be signed in to leave a comment.");
       return;
     }
@@ -224,11 +255,12 @@ const MovieDetailsPage = () => {
       setCommentLoading(true);
       setCommentError("");
 
-      const res = await axios.post(
+      await axios.post(
         "http://localhost:8081/api/comments",
         {
           movieId: id,
           text: newComment.trim(),
+          userID: currentUserId,
         },
         {
           headers: {
@@ -237,8 +269,8 @@ const MovieDetailsPage = () => {
         }
       );
 
-      setComments((prev) => [res.data, ...prev]);
       setNewComment("");
+      fetchComments();
     } catch (err) {
       console.error("Error posting comment:", err);
       setCommentError(
@@ -246,6 +278,85 @@ const MovieDetailsPage = () => {
       );
     } finally {
       setCommentLoading(false);
+    }
+  };
+
+  const handleEditStart = (comment) => {
+    setEditingCommentId(comment._id);
+    setEditText(comment.text);
+  };
+
+  const handleEditCancel = () => {
+    setEditingCommentId(null);
+    setEditText("");
+  };
+
+  const handleEditSave = async (commentId) => {
+    if (!editText.trim()) return;
+
+    try {
+      await axios.put(
+        `http://localhost:8081/api/comments/${commentId}`,
+        {
+          text: editText.trim(),
+          userID: currentUserId,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      setEditingCommentId(null);
+      setEditText("");
+      fetchComments();
+    } catch (err) {
+      console.error("Error editing comment:", err);
+      setCommentError("Could not edit comment.");
+    }
+  };
+
+  const handleDelete = async (commentId) => {
+    try {
+      await axios.delete(`http://localhost:8081/api/comments/${commentId}`, {
+        data: {
+          userID: currentUserId,
+        },
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      fetchComments();
+    } catch (err) {
+      console.error("Error deleting comment:", err);
+      setCommentError("Could not delete comment.");
+    }
+  };
+
+  const handleReply = async (commentId) => {
+    if (!replyText[commentId]?.trim()) return;
+
+    try {
+      await axios.post(
+        `http://localhost:8081/api/comments/${commentId}/reply`,
+        {
+          text: replyText[commentId].trim(),
+          userID: currentUserId,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      setReplyText({ ...replyText, [commentId]: "" });
+      fetchComments();
+    } catch (err) {
+      console.error("Error replying to comment:", err);
+      setCommentError("Could not reply to comment.");
     }
   };
 
@@ -289,6 +400,7 @@ const MovieDetailsPage = () => {
                   marginBottom: "10px",
                 }}
               />
+
               <p
                 style={{
                   margin: "0 0 6px 0",
@@ -298,6 +410,7 @@ const MovieDetailsPage = () => {
               >
                 {item.title}
               </p>
+
               <p
                 style={{
                   margin: 0,
@@ -349,6 +462,7 @@ const MovieDetailsPage = () => {
         }}
       >
         <h2>{error || "Movie not found."}</h2>
+
         <Button
           onClick={() => navigate("/homepage1")}
           style={{
@@ -382,14 +496,13 @@ const MovieDetailsPage = () => {
             : "none",
           backgroundSize: "cover",
           backgroundPosition: "center",
-          padding: "40px 20px 50px 20px",
+          padding: "40px 40px 50px 40px",
         }}
       >
         <div
           style={{
-            maxWidth: "1420px",
-            marginLeft: "40px",
-            marginRight: "auto",
+            maxWidth: "1500px",
+            margin: "0 auto",
           }}
         >
           <Button
@@ -409,8 +522,8 @@ const MovieDetailsPage = () => {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "320px 480px 380px",
-              gap: "28px",
+              gridTemplateColumns: "320px minmax(520px, 1fr) 420px",
+              gap: "30px",
               alignItems: "start",
             }}
           >
@@ -442,6 +555,7 @@ const MovieDetailsPage = () => {
                         display: "block",
                       }}
                     />
+
                     {trailer && (
                       <div
                         style={{
@@ -476,12 +590,7 @@ const MovieDetailsPage = () => {
                 )}
               </div>
 
-              <div
-                style={{
-                  display: "grid",
-                  gap: "10px",
-                }}
-              >
+              <div style={{ display: "grid", gap: "10px" }}>
                 <Button
                   onClick={() => navigate(`/movies/${movie.id}/cast-crew`)}
                   style={{
@@ -522,16 +631,24 @@ const MovieDetailsPage = () => {
                 </Button>
 
                 <Button
-  onClick={() => navigate(`/compare/${movie.id}`, {
-    state: {
-      movie: movie,
-      similarMovies: similarMovies
-    }
-  })
-}
->
-  ⚖️ Compare
-</Button>
+                  onClick={() =>
+                    navigate(`/compare/${movie.id}`, {
+                      state: {
+                        movie: movie,
+                        similarMovies: similarMovies,
+                      },
+                    })
+                  }
+                  style={{
+                    background: "#30304a",
+                    border: "none",
+                    borderRadius: "10px",
+                    padding: "12px 16px",
+                    fontWeight: "700",
+                  }}
+                >
+                  ⚖️ Compare
+                </Button>
               </div>
             </div>
 
@@ -539,15 +656,15 @@ const MovieDetailsPage = () => {
               style={{
                 background: "rgba(10, 10, 22, 0.72)",
                 borderRadius: "16px",
-                padding: "24px",
+                padding: "30px",
                 boxShadow: "0 8px 20px rgba(0,0,0,0.25)",
               }}
             >
               <h1
                 style={{
-                  fontSize: "38px",
+                  fontSize: "42px",
                   fontWeight: "700",
-                  marginBottom: "8px",
+                  marginBottom: "10px",
                 }}
               >
                 {movie.title}
@@ -558,8 +675,8 @@ const MovieDetailsPage = () => {
                   style={{
                     fontStyle: "italic",
                     color: "#ccc",
-                    marginBottom: "20px",
-                    fontSize: "17px",
+                    marginBottom: "22px",
+                    fontSize: "18px",
                   }}
                 >
                   {movie.tagline}
@@ -571,14 +688,25 @@ const MovieDetailsPage = () => {
                   display: "grid",
                   gridTemplateColumns: "1fr",
                   gap: "8px",
-                  marginBottom: "22px",
-                  lineHeight: "1.8",
+                  marginBottom: "24px",
+                  lineHeight: "1.85",
+                  fontSize: "17px",
                 }}
               >
-                <p><strong>Release Date:</strong> {movie.release_date || "N/A"}</p>
-                <p><strong>Rating:</strong> {movie.vote_average ? `${movie.vote_average}/10` : "N/A"}</p>
-                <p><strong>Runtime:</strong> {movie.runtime ? `${movie.runtime} minutes` : "N/A"}</p>
-                <p><strong>Status:</strong> {movie.status || "N/A"}</p>
+                <p>
+                  <strong>Release Date:</strong> {movie.release_date || "N/A"}
+                </p>
+                <p>
+                  <strong>Rating:</strong>{" "}
+                  {movie.vote_average ? `${movie.vote_average}/10` : "N/A"}
+                </p>
+                <p>
+                  <strong>Runtime:</strong>{" "}
+                  {movie.runtime ? `${movie.runtime} minutes` : "N/A"}
+                </p>
+                <p>
+                  <strong>Status:</strong> {movie.status || "N/A"}
+                </p>
                 <p>
                   <strong>Genres:</strong>{" "}
                   {movie.genres?.length
@@ -598,8 +726,8 @@ const MovieDetailsPage = () => {
                 <p
                   style={{
                     color: "#ddd",
-                    fontSize: "16px",
-                    lineHeight: "1.75",
+                    fontSize: "17px",
+                    lineHeight: "1.85",
                     marginBottom: 0,
                   }}
                 >
@@ -636,7 +764,10 @@ const MovieDetailsPage = () => {
               <h3 style={{ marginBottom: "16px" }}>Comments</h3>
 
               {currentUser ? (
-                <Form onSubmit={handleCommentSubmit} style={{ marginBottom: "20px" }}>
+                <Form
+                  onSubmit={handleCommentSubmit}
+                  style={{ marginBottom: "20px" }}
+                >
                   <Form.Control
                     as="textarea"
                     rows={4}
@@ -701,7 +832,9 @@ const MovieDetailsPage = () => {
                 }}
               >
                 {commentsLoading ? (
-                  <p style={{ color: "#ccc", margin: 0 }}>Loading comments...</p>
+                  <p style={{ color: "#ccc", margin: 0 }}>
+                    Loading comments...
+                  </p>
                 ) : comments.length > 0 ? (
                   comments.map((comment) => (
                     <div
@@ -719,34 +852,195 @@ const MovieDetailsPage = () => {
                           color: "#fff",
                         }}
                       >
-                        {comment.username ||
-                          comment.userName ||
-                          comment.userId ||
-                          "User"}
+                        {getUsername(comment)}
                       </p>
+
+                      {editingCommentId === comment._id ? (
+                        <>
+                          <Form.Control
+                            as="textarea"
+                            rows={3}
+                            value={editText}
+                            onChange={(e) => setEditText(e.target.value)}
+                            style={{
+                              marginBottom: "10px",
+                              borderRadius: "10px",
+                              resize: "none",
+                            }}
+                          />
+
+                          <div style={{ display: "flex", gap: "8px" }}>
+                            <Button
+                              onClick={() => handleEditSave(comment._id)}
+                              style={{
+                                background: PRIMARY_COLOR,
+                                border: "none",
+                                borderRadius: "8px",
+                                padding: "6px 12px",
+                              }}
+                            >
+                              Save
+                            </Button>
+
+                            <Button
+                              onClick={handleEditCancel}
+                              style={{
+                                background: "#30304a",
+                                border: "none",
+                                borderRadius: "8px",
+                                padding: "6px 12px",
+                              }}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </>
+                      ) : (
+                        <p
+                          style={{
+                            margin: "0 0 8px 0",
+                            color: "#ddd",
+                            lineHeight: "1.6",
+                            whiteSpace: "pre-wrap",
+                          }}
+                        >
+                          {comment.text}
+                        </p>
+                      )}
 
                       <p
                         style={{
                           margin: "0 0 8px 0",
-                          color: "#ddd",
-                          lineHeight: "1.6",
-                          whiteSpace: "pre-wrap",
-                        }}
-                      >
-                        {comment.text}
-                      </p>
-
-                      <p
-                        style={{
-                          margin: 0,
                           fontSize: "12px",
                           color: "#999",
                         }}
                       >
-                        {comment.createdAt
-                          ? new Date(comment.createdAt).toLocaleString()
-                          : ""}
+                        {formatTime(comment.createdAt)}
                       </p>
+
+                      {isOwnComment(comment) &&
+                        editingCommentId !== comment._id && (
+                          <div
+                            style={{
+                              display: "flex",
+                              gap: "8px",
+                              marginBottom: "10px",
+                            }}
+                          >
+                            <Button
+                              onClick={() => handleEditStart(comment)}
+                              style={{
+                                background: "#30304a",
+                                border: "none",
+                                borderRadius: "8px",
+                                padding: "5px 10px",
+                                fontSize: "13px",
+                              }}
+                            >
+                              Edit
+                            </Button>
+
+                            <Button
+                              onClick={() => handleDelete(comment._id)}
+                              style={{
+                                background: "#7a1f1f",
+                                border: "none",
+                                borderRadius: "8px",
+                                padding: "5px 10px",
+                                fontSize: "13px",
+                              }}
+                            >
+                              Delete
+                            </Button>
+                          </div>
+                        )}
+
+                      {currentUser && (
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: "8px",
+                            marginTop: "10px",
+                          }}
+                        >
+                          <Form.Control
+                            type="text"
+                            placeholder="Reply..."
+                            value={replyText[comment._id] || ""}
+                            onChange={(e) =>
+                              setReplyText({
+                                ...replyText,
+                                [comment._id]: e.target.value,
+                              })
+                            }
+                            style={{
+                              borderRadius: "8px",
+                              fontSize: "14px",
+                            }}
+                          />
+
+                          <Button
+                            onClick={() => handleReply(comment._id)}
+                            style={{
+                              background: PRIMARY_COLOR,
+                              border: "none",
+                              borderRadius: "8px",
+                              padding: "6px 10px",
+                              fontSize: "14px",
+                            }}
+                          >
+                            Reply
+                          </Button>
+                        </div>
+                      )}
+
+                      {comment.replies?.length > 0 && (
+                        <div style={{ marginTop: "12px" }}>
+                          {comment.replies.map((reply) => (
+                            <div
+                              key={reply._id}
+                              style={{
+                                borderLeft: "2px solid #555",
+                                paddingLeft: "10px",
+                                marginTop: "10px",
+                              }}
+                            >
+                              <p
+                                style={{
+                                  margin: "0 0 4px 0",
+                                  fontWeight: "700",
+                                  color: "#fff",
+                                  fontSize: "14px",
+                                }}
+                              >
+                                {getUsername(reply)}
+                              </p>
+
+                              <p
+                                style={{
+                                  margin: "0 0 4px 0",
+                                  color: "#ddd",
+                                  fontSize: "14px",
+                                  lineHeight: "1.5",
+                                  whiteSpace: "pre-wrap",
+                                }}
+                              >
+                                {reply.text}
+                              </p>
+
+                              <p
+                                style={{
+                                  margin: 0,
+                                  color: "#999",
+                                  fontSize: "12px",
+                                }}
+                              >
+                                {formatTime(reply.createdAt)}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ))
                 ) : (
@@ -762,10 +1056,9 @@ const MovieDetailsPage = () => {
 
       <div
         style={{
-          maxWidth: "1420px",
-          marginLeft: "40px",
-          marginRight: "auto",
-          padding: "30px 20px 50px 20px",
+          maxWidth: "1500px",
+          margin: "0 auto",
+          padding: "30px 40px 50px 40px",
         }}
       >
         {collectionMovies.length > 0 &&
