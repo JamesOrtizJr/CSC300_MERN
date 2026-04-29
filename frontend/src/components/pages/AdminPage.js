@@ -132,6 +132,28 @@ function AdminPage() {
       alert(error.response?.data?.message || "Failed to remove admin");
     }
   };
+const handleDeleteComment = async (commentId) => {
+  try {
+    await axios.delete(
+      `http://localhost:8081/userComments/admin/delete/${commentId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        },
+      }
+    );
+
+    setSelectedUserComments((prevComments) =>
+      prevComments.filter((comment) => comment._id !== commentId)
+    );
+
+  } catch (err) {
+    console.error("Delete comment error:", err.response?.data || err.message);
+    console.error("Status:", err.response?.status);
+
+    alert(err.response?.data?.message || "Could not delete comment.");
+  }
+};
 
 const handleSearch = () => {
   const results = users.filter((user) =>
@@ -155,6 +177,7 @@ const handleReset = () => {
   setSelectedUserId("");
   setSelectedUsername("");
   setSelectedUserIsAdmin(false);
+  setSelectedUserComments([]);
   setCurrentPage(1);
 };
 
@@ -422,23 +445,37 @@ const displayedUsers = sortedUsers.slice(startIndex, startIndex + usersPerPage);
               )}
             </div>
             <div style={styles.commentsSection}>
-              <h3>User Comments</h3>
+  <h3>Comments by {selectedUsername}</h3>
 
-              {loadingComments ? (
-              <p>Loading comments...</p>
-             ) : selectedUserComments.length > 0 ? (
-             selectedUserComments.map((comment) => (
-              <div key={comment._id} style={styles.commentCard}>
-               <p>{comment.text}</p>
-                         <small>
-                  Movie: <strong>{comment.movieTitle}</strong>
-                    </small>
-                         </div>
-                        ))
-                     ) : (
-                     <p>No comments found for this user.</p>
-                )}
-              </div>
+  {loadingComments ? (
+    <p>Loading comments...</p>
+  ) : selectedUserComments.length > 0 ? (
+    <div style={styles.commentsList}>
+      {selectedUserComments.map((comment) => (
+        <div key={comment._id} style={styles.commentCard}>
+          <div style={styles.commentHeader}>
+            <strong>{comment.movieTitle}</strong>
+
+            <button
+              onClick={() => handleDeleteComment(comment._id)}
+              style={styles.deleteCommentButton}
+            >
+              Delete
+            </button>
+          </div>
+
+          <p style={styles.commentText}>{comment.text}</p>
+
+          <small style={styles.commentSmall}>
+            Comment ID: {comment._id}
+          </small>
+        </div>
+      ))}
+    </div>
+  ) : (
+    <p>No comments found for this user.</p>
+  )}
+</div>
           </div>
         )}
       </div>
@@ -717,6 +754,41 @@ commentCard: {
   padding: "12px",
   marginBottom: "10px",
   textAlign: "left"
+},
+commentsList: {
+  display: "flex",
+  flexDirection: "column",
+  gap: "12px",
+  maxHeight: "350px",
+  overflowY: "auto",
+  paddingRight: "8px"
+},
+
+commentHeader: {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  gap: "10px",
+  marginBottom: "8px"
+},
+
+commentText: {
+  margin: "8px 0",
+  lineHeight: "1.4"
+},
+
+commentSmall: {
+  color: "#6b7280"
+},
+
+deleteCommentButton: {
+  backgroundColor: "#dc2626",
+  color: "white",
+  border: "none",
+  padding: "7px 12px",
+  borderRadius: "8px",
+  cursor: "pointer",
+  fontWeight: "bold"
 },
 };
 

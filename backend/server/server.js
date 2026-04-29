@@ -29,6 +29,8 @@ const postReviewRoute = require("./routes/postReview");
 
 // ADMIN
 const adminRoute = require("./routes/adminRoutes/admin");
+const adminDeleteCommentRoute = require("./routes/adminRoutes/adminDeleteComment");
+
 
 const SERVER_PORT = process.env.PORT || 8081;
 
@@ -71,6 +73,7 @@ app.use("/movies", movieRoutes);
 
 // Admin routes
 app.use("/admin", adminRoute);
+app.use("/userComments/admin/delete", adminDeleteCommentRoute);
 
 // Start server unless running tests
 if (process.env.NODE_ENV !== "test") {
