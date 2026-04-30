@@ -40,6 +40,10 @@ function AdminPage() {
   const [selectedUserComments, setSelectedUserComments] = useState([]);
   const [loadingComments, setLoadingComments] = useState(false);
 
+const [showFlaggedView, setShowFlaggedView] = useState(false);
+const [allFlaggedComments, setAllFlaggedComments] = useState([]);
+const [loadingFlaggedComments, setLoadingFlaggedComments] = useState(false);
+
   useEffect(() => {
   const savedUser = localStorage.getItem("selectedAdminUser");
 
@@ -171,11 +175,83 @@ const handleDeleteComment = async (commentId) => {
       prevComments.filter((comment) => comment._id !== commentId)
     );
 
+    setAllFlaggedComments((prevComments) =>
+      prevComments.filter((comment) => comment._id !== commentId)
+    );
+
   } catch (err) {
     console.error("Delete comment error:", err.response?.data || err.message);
     console.error("Status:", err.response?.status);
 
     alert(err.response?.data?.message || "Could not delete comment.");
+  }
+};
+
+const handleShowAllFlaggedComments = async () => {
+  setLoadingFlaggedComments(true);
+  setShowFlaggedView(true);
+
+  setSelectedUserId("");
+  setSelectedUsername("");
+  setSelectedUserIsAdmin(false);
+  setSelectedUserComments([]);
+
+  try {
+    const flaggedResults = [];
+
+    for (const user of users) {
+      const response = await axios.get(
+        `http://localhost:8081/api/comments/user/${user._id}`
+      );
+
+      const userFlaggedComments = response.data
+        .filter((comment) => checkProfanity(comment.text))
+        .map((comment) => ({
+          ...comment,
+          username: user.username,
+          userEmail: user.email,
+          flagged: true,
+        }));
+
+      flaggedResults.push(...userFlaggedComments);
+    }
+
+    const commentsWithMovies = await Promise.all(
+      flaggedResults.map(async (comment) => {
+        try {
+          const movieRes = await axios.get(
+            `https://api.themoviedb.org/3/movie/${comment.movieId}`,
+            {
+              params: {
+                api_key: TMDB_API_KEY,
+                language: "en-US",
+              },
+            }
+          );
+
+          return {
+            ...comment,
+            movieTitle: movieRes.data.title,
+          };
+        } catch {
+          return {
+            ...comment,
+            movieTitle: "Unknown Movie",
+          };
+        }
+      })
+    );
+
+    const sortedFlaggedComments = commentsWithMovies.sort((a, b) =>
+      a.username.localeCompare(b.username)
+    );
+
+    setAllFlaggedComments(sortedFlaggedComments);
+  } catch (error) {
+    console.log("Error getting flagged comments", error);
+    setAllFlaggedComments([]);
+  } finally {
+    setLoadingFlaggedComments(false);
   }
 };
 
@@ -205,6 +281,9 @@ const handleReset = () => {
   setCurrentPage(1);
   localStorage.removeItem("selectedAdminUser");
   setSelectedUserComments([]);
+  setAllFlaggedComments([]);
+  setShowFlaggedView(false);
+
 };
 
   const handleShowBannedUsers = () => {
@@ -222,6 +301,7 @@ const handleReset = () => {
   };
 
  const handleSelectUser = async (user) => {
+  setShowFlaggedView(false);
   localStorage.setItem("selectedAdminUser", JSON.stringify(user));
   setSelectedUserId(user._id);
   setSelectedUsername(user.username);
@@ -291,25 +371,37 @@ const displayedUsers = sortedUsers.slice(startIndex, startIndex + usersPerPage);
         </p>
       </div>
 
-      <div style={styles.statsContainer}>
-        <div
-          style={{ ...styles.statCard, ...styles.clickableCard }}
-          onClick={handleShowAllUsers}
-        >
-          <h3 style={styles.statTitle}>Total Users</h3>
-          <p style={styles.statNumber}>{stats.totalUsers}</p>
-          <p style={styles.cardHint}>Click to view all users</p>
-        </div>
+<div style={styles.statsContainer}>
+  <div
+    style={{ ...styles.statCard, ...styles.clickableCard }}
+    onClick={handleShowAllUsers}
+  >
+    <h3 style={styles.statTitle}>Total Users</h3>
+    <p style={styles.statNumber}>{stats.totalUsers}</p>
+    <p style={styles.cardHint}>Click to view all users</p>
+  </div>
 
-        <div
-          style={{ ...styles.statCard, ...styles.clickableCard }}
-          onClick={handleShowBannedUsers}
-        >
-          <h3 style={styles.statTitle}>Banned Users</h3>
-          <p style={styles.statNumber}>{stats.bannedUsers}</p>
-          <p style={styles.cardHint}>Click to view banned users</p>
-        </div>
-      </div>
+  <div
+    style={{ ...styles.statCard, ...styles.clickableCard }}
+    onClick={handleShowBannedUsers}
+  >
+    <h3 style={styles.statTitle}>Banned Users</h3>
+    <p style={styles.statNumber}>{stats.bannedUsers}</p>
+    <p style={styles.cardHint}>Click to view banned users</p>
+  </div>
+
+  <div
+    style={{ ...styles.statCard, ...styles.clickableCard }}
+    onClick={handleShowAllFlaggedComments}
+  >
+    <h3 style={styles.statTitle}>Flagged Comments</h3>
+    <p style={styles.statNumber}>
+      {allFlaggedComments.length > 0 ? allFlaggedComments.length : "View"}
+    </p>
+    <p style={styles.cardHint}>Click to review flagged comments</p>
+  </div>
+</div>
+      
 
       <div style={styles.searchSection}>
         <h2 style={styles.sectionTitle}>Search Users</h2>
@@ -446,6 +538,47 @@ const displayedUsers = sortedUsers.slice(startIndex, startIndex + usersPerPage);
   </div>
 )}
       </div>
+      {showFlaggedView && (
+  <div style={styles.flaggedSection}>
+    <h2 style={styles.sectionTitle}>All Flagged Comments</h2>
+
+    {loadingFlaggedComments ? (
+      <p>Loading flagged comments...</p>
+    ) : allFlaggedComments.length > 0 ? (
+      <div style={styles.commentsList}>
+        {allFlaggedComments.map((comment) => (
+          <div
+            key={comment._id}
+            style={{ ...styles.commentCard, ...styles.flaggedCommentCard }}
+          >
+            <div style={styles.commentHeader}>
+              <div>
+<strong style={{ color: "#111827" }}>{comment.username}</strong>                
+<p style={styles.commentSmall}>{comment.userEmail}</p>
+                <span style={styles.flaggedBadge}>Flagged</span>
+              </div>
+
+              <button
+                onClick={() => handleDeleteComment(comment._id)}
+                style={styles.deleteCommentButton}
+              >
+                Delete
+              </button>
+            </div>
+
+            <p style={styles.commentText}>{comment.text}</p>
+
+            <small style={styles.commentSmall}>
+              Movie: <strong>{comment.movieTitle}</strong>
+            </small>
+          </div>
+        ))}
+      </div>
+    ) : (
+      <p>No flagged comments found.</p>
+    )}
+  </div>
+)}
 
       <div style={styles.adminControlsSection}>
         <h2 style={styles.sectionTitle}>
@@ -485,8 +618,13 @@ const displayedUsers = sortedUsers.slice(startIndex, startIndex + usersPerPage);
   ) : selectedUserComments.length > 0 ? (
     <div style={styles.commentsList}>
       {selectedUserComments.map((comment) => (
-        <div key={comment._id} style={styles.commentCard}>
-          <div style={styles.commentHeader}>
+<div
+  key={comment._id}
+  style={{
+    ...styles.commentCard,
+    ...(comment.flagged ? styles.flaggedCommentCard : {})
+  }}
+>          <div style={styles.commentHeader}>
             <strong>{comment.movieTitle}</strong>
             {comment.flagged && (
                     <span style={styles.flaggedBadge}>Flagged</span>
@@ -810,7 +948,8 @@ commentHeader: {
 
 commentText: {
   margin: "8px 0",
-  lineHeight: "1.4"
+  lineHeight: "1.4",
+  color: "#111827"
 },
 
 commentSmall: {
@@ -835,6 +974,20 @@ flaggedBadge: {
   fontSize: "12px",
   fontWeight: "bold"
 },
+flaggedSection: {
+  backgroundColor: "rgba(255,255,255,0.1)",
+  borderRadius: "16px",
+  padding: "20px",
+  marginTop: "30px",
+  boxShadow: "0 6px 18px rgba(0,0,0,0.2)"
+},
+
+flaggedCommentCard: {
+  border: "2px solid #dc2626",
+  backgroundColor: "#fee2e2",
+  color: "#111827"
+},
+
 };
 
 export default AdminPage;
