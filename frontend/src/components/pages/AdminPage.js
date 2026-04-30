@@ -2,6 +2,25 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 const TMDB_API_KEY = "b794dfff76239d4deb38d526dc781cd7";
 
+const PROFANITY_WORDS = [
+  "stinky",
+  "butt",
+  "fart",
+  "looksmaxxing",
+  "emily",
+  "jumanji"
+];
+const checkProfanity = (text) => {
+  if (!text) return false;
+
+  const lowerText = text.toLowerCase();
+
+  return PROFANITY_WORDS.some((word) => {
+    const regex = new RegExp(`\\b${word}\\b`, "i");
+    return regex.test(lowerText);
+  });
+};
+
 function AdminPage() {
   const [stats, setStats] = useState({
     totalUsers: 0,
@@ -22,6 +41,11 @@ function AdminPage() {
   const [loadingComments, setLoadingComments] = useState(false);
 
   useEffect(() => {
+  const savedUser = localStorage.getItem("selectedAdminUser");
+
+  if (savedUser) {
+    handleSelectUser(JSON.parse(savedUser));
+  }    
     getStats();
     getAllUsers();
   }, []);
@@ -179,6 +203,8 @@ const handleReset = () => {
   setSelectedUserIsAdmin(false);
   setSelectedUserComments([]);
   setCurrentPage(1);
+  localStorage.removeItem("selectedAdminUser");
+  setSelectedUserComments([]);
 };
 
   const handleShowBannedUsers = () => {
@@ -196,6 +222,7 @@ const handleReset = () => {
   };
 
  const handleSelectUser = async (user) => {
+  localStorage.setItem("selectedAdminUser", JSON.stringify(user));
   setSelectedUserId(user._id);
   setSelectedUsername(user.username);
   setSelectedUserIsAdmin(user.isAdmin);
@@ -219,20 +246,26 @@ const handleReset = () => {
             }
           );
 
-          return {
-            ...comment,
-            movieTitle: movieRes.data.title,
-          };
+              return {
+                  ...comment,
+                  movieTitle: movieRes.data.title,
+                  flagged: checkProfanity(comment.text),
+                };
         } catch {
-          return {
-            ...comment,
-            movieTitle: "Unknown Movie",
-          };
+              return {
+                ...comment,
+                movieTitle: "Unknown Movie",
+                flagged: checkProfanity(comment.text),
+              };
         }
       })
     );
 
-    setSelectedUserComments(commentsWithMovies);
+const sortedComments = commentsWithMovies.sort((a, b) => {
+  return b.flagged - a.flagged;
+});
+
+setSelectedUserComments(sortedComments);
   } catch (error) {
     console.log("Error getting user comments", error);
     setSelectedUserComments([]);
@@ -455,6 +488,9 @@ const displayedUsers = sortedUsers.slice(startIndex, startIndex + usersPerPage);
         <div key={comment._id} style={styles.commentCard}>
           <div style={styles.commentHeader}>
             <strong>{comment.movieTitle}</strong>
+            {comment.flagged && (
+                    <span style={styles.flaggedBadge}>Flagged</span>
+                          )}
 
             <button
               onClick={() => handleDeleteComment(comment._id)}
@@ -788,6 +824,15 @@ deleteCommentButton: {
   padding: "7px 12px",
   borderRadius: "8px",
   cursor: "pointer",
+  fontWeight: "bold"
+},
+flaggedBadge: {
+  marginLeft: "10px",
+  backgroundColor: "#fee2e2",
+  color: "#991b1b",
+  padding: "4px 8px",
+  borderRadius: "999px",
+  fontSize: "12px",
   fontWeight: "bold"
 },
 };
