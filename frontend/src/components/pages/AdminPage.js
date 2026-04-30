@@ -36,7 +36,7 @@ function AdminPage() {
   const [selectedUsername, setSelectedUsername] = useState("");
   const [selectedUserIsAdmin, setSelectedUserIsAdmin] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const usersPerPage = 10;
+  const usersPerPage = 5;
   const [selectedUserComments, setSelectedUserComments] = useState([]);
   const [loadingComments, setLoadingComments] = useState(false);
 
@@ -187,6 +187,45 @@ const handleDeleteComment = async (commentId) => {
   }
 };
 
+const handleDeleteReply = async (commentId, replyId) => {
+  try {
+    await axios.delete(
+      `http://localhost:8081/userComments/admin/delete/${commentId}/reply/${replyId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        },
+      }
+    );
+
+    setSelectedUserComments((prevComments) =>
+      prevComments.map((comment) =>
+        comment._id === commentId
+          ? {
+              ...comment,
+              replies: comment.replies.filter((reply) => reply._id !== replyId),
+            }
+          : comment
+      )
+    );
+
+    setAllFlaggedComments((prevComments) =>
+      prevComments.map((comment) =>
+        comment._id === commentId
+          ? {
+              ...comment,
+              replies: comment.replies.filter((reply) => reply._id !== replyId),
+            }
+          : comment
+      )
+    );
+  } catch (err) {
+    console.error("Delete reply error:", err.response?.data || err.message);
+    alert(err.response?.data?.message || "Could not delete reply.");
+  }
+};
+
+
 const handleShowAllFlaggedComments = async () => {
   setLoadingFlaggedComments(true);
   setShowFlaggedView(true);
@@ -204,14 +243,25 @@ const handleShowAllFlaggedComments = async () => {
         `http://localhost:8081/api/comments/user/${user._id}`
       );
 
-      const userFlaggedComments = response.data
-        .filter((comment) => checkProfanity(comment.text))
-        .map((comment) => ({
-          ...comment,
-          username: user.username,
-          userEmail: user.email,
-          flagged: true,
-        }));
+          const userFlaggedComments = response.data
+            .filter((comment) => {
+              const commentFlagged = checkProfanity(comment.text);
+              const hasFlaggedReply = comment.replies?.some((reply) =>
+                checkProfanity(reply.text)
+              );
+
+              return commentFlagged || hasFlaggedReply;
+            })
+            .map((comment) => ({
+              ...comment,
+              username: user.username,
+              userEmail: user.email,
+              flagged: checkProfanity(comment.text),
+              replies: comment.replies?.map((reply) => ({
+                ...reply,
+                flagged: checkProfanity(reply.text),
+              })) || [],
+            }));
 
       flaggedResults.push(...userFlaggedComments);
     }
@@ -229,14 +279,24 @@ const handleShowAllFlaggedComments = async () => {
             }
           );
 
-          return {
-            ...comment,
-            movieTitle: movieRes.data.title,
-          };
+            return {
+              ...comment,
+              movieTitle: movieRes.data.title,
+              flagged: checkProfanity(comment.text),
+              replies: comment.replies?.map((reply) => ({
+                ...reply,
+                flagged: checkProfanity(reply.text),
+              })) || [],
+            };
         } catch {
           return {
             ...comment,
             movieTitle: "Unknown Movie",
+            flagged: checkProfanity(comment.text),
+            replies: comment.replies?.map((reply) => ({
+              ...reply,
+              flagged: checkProfanity(reply.text),
+            })) || [],
           };
         }
       })
@@ -326,23 +386,34 @@ const handleReset = () => {
             }
           );
 
-              return {
+                return {
                   ...comment,
                   movieTitle: movieRes.data.title,
                   flagged: checkProfanity(comment.text),
+                  replies: comment.replies?.map((reply) => ({
+                    ...reply,
+                    flagged: checkProfanity(reply.text),
+                  })) || [],
                 };
         } catch {
-              return {
-                ...comment,
-                movieTitle: "Unknown Movie",
-                flagged: checkProfanity(comment.text),
-              };
+                    return {
+                      ...comment,
+                      movieTitle: "Unknown Movie",
+                      flagged: checkProfanity(comment.text),
+                      replies: comment.replies?.map((reply) => ({
+                        ...reply,
+                        flagged: checkProfanity(reply.text),
+                      })) || [],
+                    };
         }
       })
     );
 
 const sortedComments = commentsWithMovies.sort((a, b) => {
-  return b.flagged - a.flagged;
+  const aHasFlag = a.flagged || a.replies?.some((reply) => reply.flagged);
+  const bHasFlag = b.flagged || b.replies?.some((reply) => reply.flagged);
+
+  return bHasFlag - aHasFlag;
 });
 
 setSelectedUserComments(sortedComments);
@@ -567,6 +638,34 @@ const displayedUsers = sortedUsers.slice(startIndex, startIndex + usersPerPage);
             </div>
 
             <p style={styles.commentText}>{comment.text}</p>
+            {comment.replies &&
+  comment.replies.some((reply) => reply.flagged) && (
+    <div style={styles.repliesSection}>
+      <strong style={{ color: "#111827" }}>Flagged Replies</strong>
+
+      {comment.replies
+        .filter((reply) => reply.flagged)
+        .map((reply) => (
+          <div
+            key={reply._id}
+            style={{ ...styles.replyCard, ...styles.flaggedReplyCard }}
+          >
+            <div style={styles.replyHeader}>
+              <span style={styles.flaggedBadge}>Flagged Reply</span>
+
+              <button
+                onClick={() => handleDeleteReply(comment._id, reply._id)}
+                style={styles.deleteReplyButton}
+              >
+                Delete Reply
+              </button>
+            </div>
+
+            <p style={styles.replyText}>{reply.text}</p>
+          </div>
+        ))}
+    </div>
+  )}
 
             <small style={styles.commentSmall}>
               Movie: <strong>{comment.movieTitle}</strong>
@@ -638,11 +737,44 @@ const displayedUsers = sortedUsers.slice(startIndex, startIndex + usersPerPage);
             </button>
           </div>
 
-          <p style={styles.commentText}>{comment.text}</p>
+            <p style={styles.commentText}>{comment.text}</p>
 
-          <small style={styles.commentSmall}>
-            Comment ID: {comment._id}
-          </small>
+            {comment.replies && comment.replies.length > 0 && (
+              <div style={styles.repliesSection}>
+                <strong style={{ color: "#111827" }}>Replies</strong>
+
+                {comment.replies.map((reply) => (
+                  <div
+                    key={reply._id}
+                    style={{
+                      ...styles.replyCard,
+                      ...(reply.flagged ? styles.flaggedReplyCard : {}),
+                    }}
+                  >
+                    <div style={styles.replyHeader}>
+                      {reply.flagged && (
+                        <span style={styles.flaggedBadge}>Flagged Reply</span>
+                      )}
+
+                      {reply.flagged && (
+                        <button
+                          onClick={() => handleDeleteReply(comment._id, reply._id)}
+                          style={styles.deleteReplyButton}
+                        >
+                          Delete Reply
+                        </button>
+                      )}
+                    </div>
+
+                    <p style={styles.replyText}>{reply.text}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <small style={styles.commentSmall}>
+              Comment ID: {comment._id}
+            </small>
         </div>
       ))}
     </div>
@@ -986,6 +1118,46 @@ flaggedCommentCard: {
   border: "2px solid #dc2626",
   backgroundColor: "#fee2e2",
   color: "#111827"
+},
+repliesSection: {
+  marginTop: "12px",
+  paddingTop: "10px",
+  borderTop: "1px solid #d1d5db"
+},
+
+replyCard: {
+  backgroundColor: "white",
+  color: "#111827",
+  borderRadius: "8px",
+  padding: "10px",
+  marginTop: "8px"
+},
+
+replyHeader: {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  gap: "10px"
+},
+
+replyText: {
+  margin: "8px 0 0 0",
+  color: "#111827"
+},
+
+flaggedReplyCard: {
+  border: "2px solid #dc2626",
+  backgroundColor: "#fee2e2"
+},
+
+deleteReplyButton: {
+  backgroundColor: "#b91c1c",
+  color: "white",
+  border: "none",
+  padding: "6px 10px",
+  borderRadius: "8px",
+  cursor: "pointer",
+  fontWeight: "bold"
 },
 
 };
