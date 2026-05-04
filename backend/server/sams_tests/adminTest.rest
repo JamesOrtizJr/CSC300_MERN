@@ -39,3 +39,49 @@ PUT http://localhost:8081/admin/make-admin/69cb07c4080128416163fa23
 Content-Type: application/json
 
 
+###
+GET http://localhost:8081/watchlist/
+Content-Type: application/json
+x-user-id: ampomah
+###
+
+POST http://localhost:8081/watchlist/
+Content-Type: application/json
+x-user-id: ampomah
+
+{
+  "movieId": "123",
+  "movieTitle": "Black Panther",
+  "poster": "/poster.jpg"
+}
+
+###
+DELETE http://localhost:8081/watchlist/123
+Content-Type: application/json
+x-user-id: ampomah
+
+
+
+###
+POST http://localhost:8081/favorites
+Content-Type: application/json
+
+{
+  "userId": "ampomah",
+  "movieId": "123",
+  "title": "Black Panther",
+  "overview": "A superhero movie.",
+  "poster_path": "/poster.jpg"
+}
+###
+GET http://localhost:8081/favorites
+Content-Type: application/json
+x-user-id: ampomah
+
+###
+DELETE http://localhost:8081/favorites/123
+
+
+###
+
+

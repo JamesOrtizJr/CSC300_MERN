@@ -15,7 +15,14 @@ const watchListSchema = new mongoose.Schema({
     },
     poster: {
         type: String,
-        required: false 
+        required: false,
+    },
+    overview: {
+        type: String,
+        required: false,
+    },
+    release_date: {
+        type: String,
     }
 });
 

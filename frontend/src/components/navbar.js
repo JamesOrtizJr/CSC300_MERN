@@ -1,34 +1,53 @@
-import React, { useEffect, useState } from "react";
-import getUserInfo from '../utilities/decodeJwt';
-import Container from 'react-bootstrap/Container';
-import Nav from 'react-bootstrap/Nav';
-import ReactNavbar from 'react-bootstrap/Navbar';
-import { UserContext } from "../App";
+import React from "react";
+import { Link } from "react-router-dom";
 
-export default function Navbar() {
-  const [user, setUser] = useState({});
+const PRIMARY_COLOR = "#d40a0a";
+const SECONDARY_COLOR = "#0c0c1f";
 
-  useEffect(() => {
-    const info = getUserInfo();
-    if (info) setUser(info);
-  }, []);
+const Navbar = () => {
+  return (
+    <nav
+      style={{
+        background: SECONDARY_COLOR,
+        padding: "18px 40px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        borderBottom: "1px solid #222",
+      }}
+    >
+      <Link
+        to="/homepage1"
+        style={{
+          color: "#fff",
+          textDecoration: "none",
+          fontSize: "28px",
+          fontWeight: "bold",
+        }}
+      >
+        🍿Movies<span style={{ color: PRIMARY_COLOR }}>R</span>us
+      </Link>
 
-  return (
-    <ReactNavbar bg="dark" variant="dark">
-    <Container>
-      <Nav className="me-auto">
-         <Nav.Link href="/homepage1">Home Page</Nav.Link>
-          <Nav.Link href="/login">Login</Nav.Link>
-                   {user?.isAdmin && (
-                <Nav.Link href="/admin">Admin</Nav.Link>
-                                    )}
-               
-       
-        <Nav.Link href="/privateUserProfile">Profile</Nav.Link>
-     
-      </Nav>
-    </Container>
-  </ReactNavbar>
+      <div style={{ display: "flex", gap: "24px" }}>
+        <Link to="/homepage1" style={linkStyle}>
+          Home
+        </Link>
+        <Link to="/login" style={linkStyle}>
+          Login
+        </Link>
+        <Link to="/privateUserProfile" style={linkStyle}>
+          Profile
+        </Link>
+      </div>
+    </nav>
+  );
+};
 
-  );
-}
+const linkStyle = {
+  color: "#ddd",
+  textDecoration: "none",
+  fontSize: "16px",
+  fontWeight: "600",
+};
+
+export default Navbar;

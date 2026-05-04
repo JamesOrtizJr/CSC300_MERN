@@ -22,6 +22,16 @@ const newUserCommentSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
-});
+  username: {
+    type: String,
+    required: false,
+  },
+  movieTitle: {
+    type: String,
+  },
+  moviePoster: {
+    type: String,
+  }
+})
 
 module.exports = mongoose.model("Comment", newUserCommentSchema);

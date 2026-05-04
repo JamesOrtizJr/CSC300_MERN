@@ -1,8 +1,8 @@
-GET http://localhost:8081/watchlist
+GET http://localhost:8081/watchlist/
 x-user-id: Hersy
 
 ### POST WATCHLIST
-POST http://localhost:8081/watchlist
+POST http://localhost:8081/watchlist/
 Content-Type: application/json
 x-user-id: Hersy
 

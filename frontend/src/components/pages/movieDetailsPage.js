@@ -35,8 +35,11 @@ const MovieDetailsPage = () => {
   const FAVORITES_KEY = "favoriteMovies";
   const WATCHLIST_KEY = "watchlistMovies";
 
-  const token = localStorage.getItem("accessToken");
+  const token = localStorage.getItem("token");
   const currentUser = getUserInfo();
+
+  console.log("COMMENT TOKEN:", token);
+  console.log("COMMENT USER:", currentUser);
 
   const getPosterUrl = (posterPath) =>
     posterPath
@@ -66,12 +69,43 @@ const MovieDetailsPage = () => {
   }, [trailers]);
 
   useEffect(() => {
-    const favorites = JSON.parse(localStorage.getItem(FAVORITES_KEY) || "[]");
-    const watchlist = JSON.parse(localStorage.getItem(WATCHLIST_KEY) || "[]");
+  const checkSavedStatus = async () => {
+    if (!currentUser) return;
 
-    setIsFavorite(favorites.some((movie) => String(movie.id) === String(id)));
-    setIsWatchlist(watchlist.some((movie) => String(movie.id) === String(id)));
-  }, [id]);
+    const userId =
+      currentUser.id ||
+      currentUser._id ||
+      currentUser.userId ||
+      currentUser.username;
+
+    try {
+      const [favRes, watchRes] = await Promise.all([
+        axios.get("http://localhost:8081/favorites", {
+          headers: {
+            "x-user-id": userId,
+          },
+        }),
+        axios.get("http://localhost:8081/watchlist/", {
+          headers: {
+            "x-user-id": userId,
+          },
+        }),
+      ]);
+
+      setIsFavorite(
+        favRes.data.some((item) => String(item.movieId) === String(id))
+      );
+
+      setIsWatchlist(
+        watchRes.data.some((item) => String(item.movieId) === String(id))
+      );
+    } catch (err) {
+      console.error("Error checking saved movie status:", err);
+    }
+  };
+
+  checkSavedStatus();
+}, [id]);
 
   useEffect(() => {
     const fetchMovieDetails = async () => {
@@ -199,18 +233,103 @@ const MovieDetailsPage = () => {
     localStorage.setItem(storageKey, JSON.stringify(updated));
   };
 
-  const handleToggleFavorite = () => {
-    toggleStoredMovie(FAVORITES_KEY, setIsFavorite, isFavorite);
-  };
+  const handleToggleFavorite = async () => {
+  if (!movie || !currentUser) {
+    alert("Please log in first.");
+    return;
+  }
 
-  const handleToggleWatchlist = () => {
-    toggleStoredMovie(WATCHLIST_KEY, setIsWatchlist, isWatchlist);
-  };
+  const userId =
+    currentUser.id ||
+    currentUser._id ||
+    currentUser.userId ||
+    currentUser.username;
+
+  try {
+    if (isFavorite) {
+      alert("Already in favorites!");
+      return;
+    }
+
+    await axios.post(
+  "http://localhost:8081/favorites",
+  {
+    movieId: String(movie.id),
+    title: movie.title,
+    overview: movie.overview,
+    poster_path: movie.poster_path,
+    release_date: movie.release_date,
+  },
+  {
+    headers: {
+      "x-user-id": userId,
+    },
+  }
+);
+
+    setIsFavorite(true);
+    alert("Added to favorites!");
+  } catch (err) {
+    if (err.response?.status === 409) {
+      setIsFavorite(true);
+      alert("Already in favorites!");
+      return;
+    }
+
+    console.error("Error adding favorite:", err);
+    alert("Could not add to favorites.");
+  }
+};
+///////// WATCHLIST HANDLER //////////
+
+const handleToggleWatchlist = async () => {
+  console.log("WATCHLIST BUTTON CLICKED", movie);
+  console.log("CURRENT USER:", currentUser);
+  console.log("USER ID:", currentUser?.id || currentUser?._id || currentUser?.userId || currentUser?.username);
+
+  if (!movie || !currentUser) {
+    alert("Please log in first.");
+    return;
+  }
+
+  const userId =
+    currentUser.id ||
+    currentUser._id ||
+    currentUser.userId ||
+    currentUser.username;
+
+  try {
+    const res = await axios.post(
+      "http://localhost:8081/watchlist",
+      {
+        userId: userId,
+        movieId: String(movie.id),
+        movieTitle: movie.title,
+        poster: movie.poster_path,
+        overview: movie.overview,
+        release_date: movie.release_date,
+      },
+      {
+        headers: {
+          "x-user-id": userId,
+        },
+      }
+    );
+
+    console.log("WATCHLIST SAVED:", res.data);
+
+    setIsWatchlist(true);
+    alert("Added to watchlist!");
+  } catch (err) {
+    console.error("WATCHLIST ERROR:", err.response?.data || err.message);
+    alert("Could not add to watchlist.");
+  }
+};
 
   const handleCommentSubmit = async (e) => {
     e.preventDefault();
 
-    if (!token || !currentUser) {
+    if (!currentUser) {
       setCommentError("You must be signed in to leave a comment.");
       return;
     }
@@ -225,17 +344,20 @@ const MovieDetailsPage = () => {
       setCommentError("");
 
       const res = await axios.post(
-        "http://localhost:8081/api/comments",
-        {
-          movieId: id,
-          text: newComment.trim(),
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+  "http://localhost:8081/api/comments",
+  {
+    movieId: id,
+    movieTitle: movie.title,
+    moviePoster: movie.poster_path,
+    text: newComment.trim(),
+    userId:
+      currentUser._id ||
+      currentUser.id ||
+      currentUser.userId ||
+      currentUser.username,
+    username: currentUser.username,
+  }
+);
 
       setComments((prev) => [res.data, ...prev]);
       setNewComment("");
@@ -719,10 +841,7 @@ const MovieDetailsPage = () => {
                           color: "#fff",
                         }}
                       >
-                        {comment.username ||
-                          comment.userName ||
-                          comment.userId ||
-                          "User"}
+                        {comment.username || "User"}
                       </p>
 
                       <p
