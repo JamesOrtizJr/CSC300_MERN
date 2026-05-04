@@ -19,6 +19,9 @@ const getFavoritesRoute = require("./routes/getFavorites");
 
 const makeCommentRoute = require("./routes/userComments/userMakeComment");
 const getAllUserCommentsRoute = require("./routes/userComments/userGetAllUserComments");
+const editCommentRoute = require("./routes/userComments/userEditComment");
+const deleteCommentRoute = require("./routes/userComments/userDeleteComment");
+const replyCommentRoute = require("./routes/userComments/userReplyToComment");
 
 // REVIEW
 const getReviewsRoute = require("./routes/getReviews");
@@ -26,6 +29,8 @@ const postReviewRoute = require("./routes/postReview");
 
 // ADMIN
 const adminRoute = require("./routes/adminRoutes/admin");
+const adminDeleteCommentRoute = require("./routes/adminRoutes/adminDeleteComment");
+
 
 const SERVER_PORT = process.env.PORT || 8081;
 
@@ -47,6 +52,9 @@ app.use("/user", deleteUser);
 // Comment routes
 app.use("/api/comments", makeCommentRoute);
 app.use("/api/comments", getAllUserCommentsRoute);
+app.use("/api/comments", editCommentRoute);
+app.use("/api/comments", deleteCommentRoute);
+app.use("/api/comments", replyCommentRoute);
 
 // Favorites routes
 app.use("/favorites", postFavoritesRoute);
@@ -65,6 +73,7 @@ app.use("/movies", movieRoutes);
 
 // Admin routes
 app.use("/admin", adminRoute);
+app.use("/userComments/admin/delete", adminDeleteCommentRoute);
 
 // Start server unless running tests
 if (process.env.NODE_ENV !== "test") {

@@ -1,34 +1,33 @@
 const express = require("express");
 const router = express.Router();
 const Comment = require("../../models/userComment");
-const auth = require('../../../middleware/auth');
+const auth = require("../../../middleware/auth");
 
-router.post("/", async (req, res) => {
+router.post("/", auth, async (req, res) => {
   try {
-    const { movieId, movieTitle, moviePoster, text, userId, username } = req.body;
+    const { movieId, text } = req.body;
 
-    if (!movieId || !movieTitle || !userId || !username) {
+    if (!movieId || !text || !text.trim()) {
       return res.status(400).json({
-        message: "All fields are required.",
+        message: "movieId and text are required.",
       });
     }
 
     const comment = new Comment({
-      userId,
-      username,
       movieId,
-      movieTitle,
-      moviePoster,
       text: text.trim(),
-    
+      userID: req.user._id,
     });
 
     await comment.save();
 
-    res.status(201).json(comment);
+    const populatedComment = await Comment.findById(comment._id)
+      .populate("userID", "username")
+      .populate("replies.userID", "username");
+
+    res.status(201).json(populatedComment);
   } catch (err) {
-    console.error("Error creating comment:", err);
-    res.status(400).json({
+    res.status(500).json({
       message: "Could not create comment.",
       error: err.message,
     });

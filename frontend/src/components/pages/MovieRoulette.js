@@ -8,6 +8,7 @@ const PRIMARY_COLOR = "#d40a0a";
 const SECONDARY_COLOR = "#0c0c1f";
 const TMDB_API_KEY = "b794dfff76239d4deb38d526dc781cd7";
 
+
 const decadeMap = {
   "1900s": { start: "1900-01-01", end: "1999-12-31" },
   "1980s": { start: "1980-01-01", end: "1989-12-31" },
@@ -25,9 +26,16 @@ const MovieRoulette = () => {
   const [spinning, setSpinning] = useState(false);
   const [movie, setMovie] = useState(null);
   const [error, setError] = useState("");
+  const [genreMode, setGenreMode] = useState("combined");
 
-  const wheelColors = ["#ff4d4d", "#54a0ff", "#1dd1a1"];
-
+const wheelColors = [
+  "#ff4d4d",
+  "#54a0ff",
+  "#1dd1a1",
+  "#feca57",
+  "#5f27cd",
+  "#ff9ff3",
+];
   useEffect(() => {
     const fetchGenres = async () => {
       try {
@@ -59,25 +67,30 @@ const MovieRoulette = () => {
   winSoundRef.current.volume = 0.6;
   }, []);
 
-  const toggleGenre = (genreObj) => {
-    const alreadySelected = selectedGenres.some((g) => g.id === genreObj.id);
+const toggleGenre = (genreObj) => {
+  const alreadySelected = selectedGenres.some((g) => g.id === genreObj.id);
+  const maxGenres = genreMode === "combined" ? 3 : 6;
 
-    if (alreadySelected) {
-      setSelectedGenres(selectedGenres.filter((g) => g.id !== genreObj.id));
-      return;
-    }
+  if (alreadySelected) {
+    setSelectedGenres(selectedGenres.filter((g) => g.id !== genreObj.id));
+    return;
+  }
 
-    if (selectedGenres.length >= 3) {
-      setError("You can only choose up to 3 genres.");
-      return;
-    }
+  if (selectedGenres.length >= maxGenres) {
+    setError(
+      genreMode === "combined"
+        ? "You can only choose up to 3 genres in combined mode."
+        : "You can only choose up to 6 genres in separate mode."
+    );
+    return;
+  }
 
-    setError("");
-    setSelectedGenres([...selectedGenres, genreObj]);
-  };
+  setError("");
+  setSelectedGenres([...selectedGenres, genreObj]);
+};
 
-  const getRandomMovieByGenre = async (genreId, selectedDecade) => {
-    const dateRange = decadeMap[selectedDecade] || null;
+const getRandomMovieByGenre = async (genreIds, selectedDecade, mode) => {
+     const dateRange = decadeMap[selectedDecade] || null;
 
     const baseParams = {
       api_key: TMDB_API_KEY,
@@ -85,7 +98,7 @@ const MovieRoulette = () => {
       sort_by: "popularity.desc",
       include_adult: false,
       include_video: false,
-      with_genres: genreId.join(","),
+      with_genres: mode === "combined" ? genreIds.join(",") : genreIds.join("|"),
 
       //removes unrated/ barely rated movies to improve quality of results
       "vote_count.gte": 50,
@@ -118,10 +131,10 @@ const MovieRoulette = () => {
       movie.vote_average > 0
     );
 if (results.length === 0) {
-  const fallbackParams = {
-    ...baseParams,
-    with_genres: genreId.join("|"),
-  };
+const fallbackParams = {
+  ...baseParams,
+  with_genres: genreIds.join("|"),
+};
 
   const fallbackRes = await axios.get(
     "https://api.themoviedb.org/3/discover/movie",
@@ -161,9 +174,24 @@ const spinWheel = () => {
   const chosenGenre = selectedGenres[randomIndex];
 
   const sliceAngle = 360 / selectedGenres.length;
+
+  // Center of the chosen genre slice
+  const sliceCenter = randomIndex * sliceAngle + sliceAngle / 2;
+
+  // Where that slice needs to rotate to land under the pointer
+  const targetRotation = 360 - sliceCenter;
+
+  // Account for the wheel's current rotation
+  const currentRotation = rotation % 360;
+
+  let rotationNeeded = targetRotation - currentRotation;
+
+  if (rotationNeeded < 0) {
+    rotationNeeded += 360;
+  }
+
   const extraSpins = 360 * 5;
-  const finalRotation =
-    extraSpins + (360 - randomIndex * sliceAngle - sliceAngle / 2);
+  const finalRotation = extraSpins + rotationNeeded;
 
   setSpinning(true);
   setMovie(null);
@@ -172,9 +200,19 @@ const spinWheel = () => {
 
   setTimeout(async () => {
     try {
-        const genreId = selectedGenres.map((g) => g.id);
+      let genreIds;
 
-        const randomMovie = await getRandomMovieByGenre(genreId, decade);
+      if (genreMode === "combined") {
+        genreIds = selectedGenres.map((g) => g.id);
+      } else {
+        genreIds = [chosenGenre.id];
+      }
+
+      const randomMovie = await getRandomMovieByGenre(
+        genreIds,
+        decade,
+        genreMode
+      );
 
       if (winSoundRef.current) {
         winSoundRef.current.currentTime = 0;
@@ -183,7 +221,10 @@ const spinWheel = () => {
 
       setMovie({
         ...randomMovie,
-        selectedGenreName: selectedGenres.map((g) => g.name).join(" + "),
+        selectedGenreName:
+          genreMode === "combined"
+            ? selectedGenres.map((g) => g.name).join(" + ")
+            : chosenGenre.name,
       });
     } catch (err) {
       console.error(err);
@@ -226,11 +267,44 @@ const gradient =
       <div style={styles.container}>
         <h1 style={styles.title}>🎲 Movie Roulette</h1>
         <p style={styles.subtitle}>
-          Pick up to 3 genres, choose an optional decade, then spin.
-        </p>
+  {genreMode === "combined"
+    ? "Pick up to 3 genres to combine, choose an optional decade, then spin."
+    : "Pick up to 6 genres as separate wheel options, choose an optional decade, then spin."}
+</p>
+
+<div style={styles.modeToggle}>
+  <button
+    onClick={() => {
+      setGenreMode("combined");
+      setSelectedGenres((prev) => prev.slice(0, 3));
+      setError("");
+    }}
+    style={{
+      ...styles.modeButton,
+      ...(genreMode === "combined" ? styles.activeModeButton : {}),
+    }}
+  >
+    Combined Genres
+  </button>
+
+  <button
+    onClick={() => {
+      setGenreMode("separate");
+      setError("");
+    }}
+    style={{
+      ...styles.modeButton,
+      ...(genreMode === "separate" ? styles.activeModeButton : {}),
+    }}
+  >
+    Separate Genres
+  </button>
+</div>
 
         <div style={styles.genreBox}>
-          <p style={styles.sectionTitle}>Choose up to 3 genres</p>
+        <p style={styles.sectionTitle}>
+          Choose up to {genreMode === "combined" ? 3 : 6} genres
+        </p>        
           <div style={styles.genreGrid}>
             {genres.map((g) => {
               const active = selectedGenres.some((item) => item.id === g.id);
@@ -563,6 +637,28 @@ const styles = {
   fontWeight: "600",
   zIndex: 20,
   },
+  modeToggle: {
+  display: "flex",
+  justifyContent: "center",
+  gap: "12px",
+  flexWrap: "wrap",
+  marginBottom: "25px",
+},
+
+modeButton: {
+  background: "#fff",
+  color: "#000",
+  border: "none",
+  borderRadius: "10px",
+  padding: "10px 18px",
+  fontWeight: "700",
+  cursor: "pointer",
+},
+
+activeModeButton: {
+  background: PRIMARY_COLOR,
+  color: "#fff",
+},
 };
 
 export default MovieRoulette;
