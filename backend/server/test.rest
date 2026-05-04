@@ -53,7 +53,17 @@ POST  http://localhost:8081/user/deleteAll
 
 
 ###
-POST http://localhost:8081/userMakeComment
+POST http://localhost:8081/api/comments
+Content-Type: application/json
+
+{
+    "userId": "111",
+    "postId": "222",
+    "text": "Testing comment from REST client"
+}
+
+###
+GET POST http://localhost:8081/api/comments
 Content-Type: application/json
 
 {
@@ -67,13 +77,13 @@ GET http://localhost:8081/userGetAllUserComments
 
 ###
 ### GET WATCHLIST
-GET http://localhost:8081/watchlist
-x-user-id: testUser123
+GET http://localhost:8081/watchlist/
+x-user-id: ampomah
 
 ### POST WATCHLIST
-POST http://localhost:8081/watchlist
+POST http://localhost:8081/watchlist/
 Content-Type: application/json
-x-user-id: testUser123
+x-user-id: ampomah
 
 {
     "movieId": "522222",
@@ -83,7 +93,7 @@ x-user-id: testUser123
 
 ### DELETE FROM WATCHLIST
 DELETE http://localhost:8081/watchlist/522222
-x-user-id: testUser123
+x-user-id: ampomah
 
 
 
