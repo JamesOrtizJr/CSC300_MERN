@@ -39,6 +39,11 @@ const Navbar = () => {
           Profile
         </Link>
       </div>
+
+          <Link to="/admin" style={linkStyle}>
+    Admin
+  </Link>
+  
     </nav>
   );
 };
